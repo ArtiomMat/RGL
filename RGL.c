@@ -7,7 +7,7 @@
 
 #define RGL_SRC
 #include "RGL.h"
-#include "gldef.h"
+#include "RGL_loader.h"
 
 #define CLASSNAME "RGLWND"
 
@@ -22,13 +22,13 @@ typedef BOOL (*WGLSWAPINTERVAL) (int interval);
 
 static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
 
-static UINT vertshader, fragshader;
-
-// type: 0=vertex, 1=fragment
-static int loadshader(const char* fp, char type) {
+// Pass the actual opengl enum to type, like GL_VERTEX_SHADER.
+UINT RGL_loadshader(const char* fp, UINT type) {
   FILE* f = fopen(fp, "rb");
-  if (!f)
+  if (!f) {
+    printf("RGL: Could not load shader '%s'.", fp);
     return 0;
+  }
 
   fseek(f, 0, SEEK_END);
   long size = ftell(fp);
@@ -37,11 +37,96 @@ static int loadshader(const char* fp, char type) {
   char data[size+1];
   fread(data, size, 1, f);
   data[size] = 0;
+  
+  fclose(f);
 
-  if (!glCreateShader(GL_VERTEX_SHADER))
-    printf("RGL: Could not load shader '%s'.", fp); 
+  switch (type) {
+    case RGL_FRAGMENTSHADER:
+    type = GL_FRAGMENT_SHADER;
+    break;
 
-  return 1;
+    default:
+    type = GL_VERTEX_SHADER;
+    break;
+  }
+
+  UINT shader = glCreateShader(type);
+
+  if (!shader) {
+    printf("RGL: Shader '%s' creation failed.", fp);
+    return 0;
+  }
+
+  glShaderSource(shader, 1, &data, NULL);
+  glCompileShader(shader);
+
+  return shader;
+}
+
+void RGL_freeshader(UINT shader) {
+  glDeleteShader(shader);
+}
+
+UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
+  UINT program = glCreateProgram();
+
+  glAttachShader(program, vertshader);
+  glAttachShader(program, fragshader);
+  glLinkProgram(program);
+
+  int success;
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success) {
+    printf("RGL: Program creation failed.");
+    return 0;
+  }
+
+  return program;
+}
+
+UINT RGL_loadprogram(const char* fp) {
+  FILE* f = fopen(fp, "rb");
+  if (!f) {
+    printf("RGL: Program loading failed.");
+    return 0;
+  }
+  
+  GLsizei len;
+  GLenum format;
+
+  fread(&format, sizeof(GLenum), 1, f);
+  fread(&len, sizeof(GLsizei), 1, f);
+
+  char data[len];
+  fread(data, len, 1, f);
+
+  fclose(f);
+
+  UINT program = glCreateProgram();
+  glProgramBinary(program, format, data, len);
+
+  return program;
+}
+
+void RGL_saveprogram(UINT program, const char* fp) {
+  GLsizei len;
+  GLenum format;
+  glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &len);
+
+  char data[len];
+
+  glGetProgramBinary(program, len, NULL, &format, data);
+
+  FILE* f = fopen(fp, "wb");
+  fwrite(&format, sizeof(GLenum), 1, f);
+  fwrite(&len, sizeof(GLsizei), 1, f);
+  fwrite(data, len, 1, f);
+
+  fclose(f);
+}
+
+void RGL_freeprogram(UINT program) {
+  glDeleteProgram(program);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
