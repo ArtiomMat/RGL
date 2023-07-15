@@ -1,13 +1,13 @@
 #include <windows.h>
 
+#define RGL_SRC
+#include "RGL.h"
+#include "RGL_loader.h"
+
 #include <GL/wgl.h>
 #include <GL/wglext.h>
 
 #include <stdio.h>
-
-#define RGL_SRC
-#include "RGL.h"
-#include "RGL_loader.h"
 
 #define CLASSNAME "RGLWND"
 
@@ -26,18 +26,20 @@ static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
 UINT RGL_loadshader(const char* fp, UINT type) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
-    printf("RGL: Could not load shader '%s'.", fp);
+    printf("RGL: Could not load shader '%s'.\n", fp);
     return 0;
   }
 
   fseek(f, 0, SEEK_END);
-  long size = ftell(fp);
+  long size = ftell(f);
   fseek(f, 0, SEEK_SET);
 
   char data[size+1];
   fread(data, size, 1, f);
-  data[size] = 0;
+  data[size] = '\0';
   
+  puts(data);
+
   fclose(f);
 
   switch (type) {
@@ -50,34 +52,54 @@ UINT RGL_loadshader(const char* fp, UINT type) {
     break;
   }
 
-  UINT shader = glCreateShader(type);
+  UINT shader = rglCreateShader(type);
 
   if (!shader) {
-    printf("RGL: Shader '%s' creation failed.", fp);
+    printf("RGL: Shader '%s' creation failed.\n", fp);
     return 0;
   }
 
-  glShaderSource(shader, 1, &data, NULL);
-  glCompileShader(shader);
+  const char* ptrdata = data; // Dark magic because can't pass array pointers
+
+  rglShaderSource(shader, 1, &ptrdata, NULL);
+  rglCompileShader(shader);
+
+  int success;
+  rglGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char info[512];
+    info[0] = 'c';
+    info[1] = 0;
+    rglGetShaderInfoLog(shader, sizeof(info), NULL, info);
+    printf("RGL: Compilation of shader '%s' unsuccessful.\nINFO: '%s'\n", fp, info);
+    RGL_freeshader(shader);
+    return 0;
+  }
 
   return shader;
 }
 
 void RGL_freeshader(UINT shader) {
-  glDeleteShader(shader);
+  rglDeleteShader(shader);
 }
 
 UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
-  UINT program = glCreateProgram();
+  UINT program = rglCreateProgram();
+  if (!program) {
+    printf("RGL: Creation of program failed.");
+    return 0;
+  }
 
-  glAttachShader(program, vertshader);
-  glAttachShader(program, fragshader);
-  glLinkProgram(program);
+  if (vertshader)
+    rglAttachShader(program, vertshader);
+  if (fragshader)
+    rglAttachShader(program, fragshader);
+  rglLinkProgram(program);
 
   int success;
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  rglGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    printf("RGL: Program creation failed.");
+    printf("RGL: Program linking failed.");
     return 0;
   }
 
@@ -102,8 +124,8 @@ UINT RGL_loadprogram(const char* fp) {
 
   fclose(f);
 
-  UINT program = glCreateProgram();
-  glProgramBinary(program, format, data, len);
+  UINT program = rglCreateProgram();
+  rglProgramBinary(program, format, data, len);
 
   return program;
 }
@@ -111,11 +133,11 @@ UINT RGL_loadprogram(const char* fp) {
 void RGL_saveprogram(UINT program, const char* fp) {
   GLsizei len;
   GLenum format;
-  glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &len);
+  rglGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &len);
 
   char data[len];
 
-  glGetProgramBinary(program, len, NULL, &format, data);
+  rglGetProgramBinary(program, len, NULL, &format, data);
 
   FILE* f = fopen(fp, "wb");
   fwrite(&format, sizeof(GLenum), 1, f);
@@ -126,7 +148,7 @@ void RGL_saveprogram(UINT program, const char* fp) {
 }
 
 void RGL_freeprogram(UINT program) {
-  glDeleteProgram(program);
+  rglDeleteProgram(program);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -255,9 +277,11 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
   else
     puts("RGL: Could not load wglSwapIntervalEXT, so can't VSync.");
 
+  printf("RGL: OpenGL version is '%s'.\n", glGetString(GL_VERSION));
+
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-  // Load the vertex and fragment shaders
+  RGL_loadgl();
 
   return 1;
 }

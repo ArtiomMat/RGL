@@ -1,6 +1,8 @@
-#include <GL/glext.h>
+#pragma once
+
 #include <GL/glcorearb.h>
 #include <GL/gl.h>
+#include <GL/glext.h>
 
 #ifdef RGL_SRC
   #define EXTERN 
@@ -10,29 +12,29 @@
 
 void RGL_loadgl();
 
-EXTERN GLuint (*glCreateShader) (GLenum shaderType);
-EXTERN void (*glShaderSource) (GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
-EXTERN void (*glCompileShader) (GLuint shader);
-EXTERN void (*glAttachShader) (GLuint program, GLuint shader);
-EXTERN void (*glLinkProgram) (GLuint program);
-EXTERN void (*glUseProgram) (GLuint program);
-EXTERN void (*glDeleteShader) (GLuint shader);
-EXTERN void (*glGetShaderiv) (GLuint shader, GLenum pname, GLint *params);
-EXTERN void (*glGetShaderInfoLog) (GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
-EXTERN void (*glGenBuffers) (GLsizei n, GLuint *buffers);
-EXTERN void (*glBindBuffer) (GLenum target, GLuint buffer);
-EXTERN void (*glBufferData) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-EXTERN void (*glEnableVertexAttribArray) (GLuint index);
-EXTERN void (*glVertexAttribPointer) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
-EXTERN void (*glGenVertexArrays) (GLsizei n, GLuint *arrays);
-EXTERN void (*glBindVertexArray) (GLuint array);
-EXTERN void (*glDrawArrays) (GLenum mode, GLint first, GLsizei count);
-EXTERN void (*glDeleteBuffers) (GLsizei n, const GLuint *buffers);
-EXTERN void (*glDeleteVertexArrays) (GLsizei n, const GLuint *arrays);
-EXTERN GLuint (*glCreateProgram) ();
-EXTERN void (*glDeleteProgram) (GLuint program);
-EXTERN void (*glGetProgramiv) (GLuint program, GLenum pname, GLint *params);
+EXTERN GLuint (*rglCreateShader) (GLenum shaderType);
+EXTERN void (*rglShaderSource) (GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
+EXTERN void (*rglCompileShader) (GLuint shader);
+EXTERN void (*rglAttachShader) (GLuint program, GLuint shader);
+EXTERN void (*rglLinkProgram) (GLuint program);
+EXTERN void (*rglUseProgram) (GLuint program);
+EXTERN void (*rglDeleteShader) (GLuint shader);
+EXTERN void (*rglGetShaderiv) (GLuint shader, GLenum pname, GLint *params);
+EXTERN void (*rglGetShaderInfoLog) (GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
+EXTERN void (*rglGenBuffers) (GLsizei n, GLuint *buffers);
+EXTERN void (*rglBindBuffer) (GLenum target, GLuint buffer);
+EXTERN void (*rglBufferData) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+EXTERN void (*rglEnableVertexAttribArray) (GLuint index);
+EXTERN void (*rglVertexAttribPointer) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
+EXTERN void (*rglGenVertexArrays) (GLsizei n, GLuint *arrays);
+EXTERN void (*rglBindVertexArray) (GLuint array);
+EXTERN void (*rglDrawArrays) (GLenum mode, GLint first, GLsizei count);
+EXTERN void (*rglDeleteBuffers) (GLsizei n, const GLuint *buffers);
+EXTERN void (*rglDeleteVertexArrays) (GLsizei n, const GLuint *arrays);
+EXTERN GLuint (*rglCreateProgram) ();
+EXTERN void (*rglDeleteProgram) (GLuint program);
+EXTERN void (*rglGetProgramiv) (GLuint program, GLenum pname, GLint *params);
 
-EXTERN void (*glGetProgramBinary) (GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
-EXTERN void (*glProgramBinary) (GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
-EXTERN void (*glProgramParameteri) (GLuint program, GLenum pname, GLint value);
+EXTERN void (*rglGetProgramBinary) (GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
+EXTERN void (*rglProgramBinary) (GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
+EXTERN void (*rglProgramParameteri) (GLuint program, GLenum pname, GLint value);

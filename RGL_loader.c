@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <stdio.h>
 
 #include "RGL_loader.h"
 
@@ -18,29 +19,38 @@ static void* load(const char* name) {
 void RGL_loadgl() {
   module = LoadLibraryA("opengl32.dll");
 
-  glCreateShader = load("glCreateShader");
-  glShaderSource = load("glShaderSource");
-  glCompileShader = load("glCompileShader");
-  glAttachShader = load("glAttachShader");
-  glLinkProgram = load("glLinkProgram");
-  glUseProgram = load("glUseProgram");
-  glDeleteShader = load("glDeleteShader");
-  glGetShaderiv = load("glGetShaderiv");
-  glGetShaderInfoLog = load("glGetShaderInfoLog");
-  glGenBuffers = load("glGenBuffers");
-  glBindBuffer = load("glBindBuffer");
-  glBufferData = load("glBufferData");
-  glEnableVertexAttribArray = load("glEnableVertexAttribArray");
-  glVertexAttribPointer = load("glVertexAttribPointer");
-  glGenVertexArrays = load("glGenVertexArrays");
-  glBindVertexArray = load("glBindVertexArray");
-  glDrawArrays = load("glDrawArrays");
-  glDeleteBuffers = load("glDeleteBuffers");
-  glDeleteVertexArrays = load("glDeleteVertexArrays");
-  glCreateProgram = load("glCreateProgram");
-  glDeleteProgram = load("glDeleteProgram");
-  glGetProgramiv = load("glGetProgramiv");
-  glGetProgramBinary = load("glGetProgramBinary");
-  glProgramBinary = load("glProgramBinary");
-  glProgramParameteri = load("glProgramParameteri");
+  if (!module){
+    puts("FATAL: RGL failed to load opengl32.dll.");
+    exit(1);
+  }
+
+  rglCreateShader = load("glCreateShader");
+  if (!rglCreateShader) {
+    puts("FATAL: Loading OpenGL functions failed.");
+    exit(1);
+  }
+  rglShaderSource = load("glShaderSource");
+  rglCompileShader = load("glCompileShader");
+  rglAttachShader = load("glAttachShader");
+  rglLinkProgram = load("glLinkProgram");
+  rglUseProgram = load("glUseProgram");
+  rglDeleteShader = load("glDeleteShader");
+  rglGetShaderiv = load("glGetShaderiv");
+  rglGetShaderInfoLog = load("glGetShaderInfoLog");
+  rglGenBuffers = load("glGenBuffers");
+  rglBindBuffer = load("glBindBuffer");
+  rglBufferData = load("glBufferData");
+  rglEnableVertexAttribArray = load("glEnableVertexAttribArray");
+  rglVertexAttribPointer = load("glVertexAttribPointer");
+  rglGenVertexArrays = load("glGenVertexArrays");
+  rglBindVertexArray = load("glBindVertexArray");
+  rglDrawArrays = load("glDrawArrays");
+  rglDeleteBuffers = load("glDeleteBuffers");
+  rglDeleteVertexArrays = load("glDeleteVertexArrays");
+  rglCreateProgram = load("glCreateProgram");
+  rglDeleteProgram = load("glDeleteProgram");
+  rglGetProgramiv = load("glGetProgramiv");
+  rglGetProgramBinary = load("glGetProgramBinary");
+  rglProgramBinary = load("glProgramBinary");
+  rglProgramParameteri = load("glProgramParameteri");
 }
