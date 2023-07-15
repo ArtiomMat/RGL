@@ -23,7 +23,7 @@ typedef BOOL (*WGLSWAPINTERVAL) (int interval);
 static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
 
 // Pass the actual opengl enum to type, like GL_VERTEX_SHADER.
-UINT RGL_loadshader(const char* fp, UINT type) {
+RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
     printf("RGL: Could not load shader '%s'.\n", fp);
@@ -77,11 +77,11 @@ UINT RGL_loadshader(const char* fp, UINT type) {
   return shader;
 }
 
-void RGL_freeshader(UINT shader) {
+void RGL_freeshader(RGL_SHADER shader) {
   rglDeleteShader(shader);
 }
 
-UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
+RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader) {
   UINT program = rglCreateProgram();
   if (!program) {
     printf("RGL: Creation of program failed.\n");
@@ -104,10 +104,10 @@ UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
   return program;
 }
 
-UINT RGL_loadprogram(const char* fp) {
+RGL_PROGRAM RGL_loadprogram(const char* fp) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
-    printf("RGL: Program loading failed.\n");
+    printf("RGL: Could not load program '%s'.\n", fp);
     return 0;
   }
   
@@ -137,7 +137,7 @@ UINT RGL_loadprogram(const char* fp) {
   return program;
 }
 
-void RGL_saveprogram(UINT program, const char* fp) {
+void RGL_saveprogram(RGL_PROGRAM program, const char* fp) {
   GLsizei len;
   GLenum format;
   rglGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &len);
@@ -154,8 +154,81 @@ void RGL_saveprogram(UINT program, const char* fp) {
   fclose(f);
 }
 
-void RGL_freeprogram(UINT program) {
+void RGL_freeprogram(RGL_PROGRAM program) {
   rglDeleteProgram(program);
+}
+
+// TODO: Remove
+static RGL_MODEL lastmodel;
+
+// Initializes opengl part
+void RGL_initmodel(RGL_MODEL modelptr) {
+  rglGenVertexArrays(1, &modelptr->vao);
+
+  rglBindVertexArray(modelptr->vao);
+
+  // Setup the vertex buffer object
+  rglGenBuffers(1, &modelptr->vertex_bo);
+  rglBindBuffer(GL_ARRAY_BUFFER, modelptr->vertex_bo); // Use?
+  rglBufferData(GL_ARRAY_BUFFER, modelptr->verticesn * sizeof (float) * 3, modelptr->vertices, /*TODO*/GL_STATIC_DRAW); // Copy
+  rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), 0); // Cofigure
+  rglEnableVertexAttribArray(0); 
+
+  printf("ERROR: %d\n", glGetError());
+
+  lastmodel = modelptr;
+}
+
+RGL_MODEL RGL_loadmodel(const char* fp, RGL_PROGRAM program) {
+
+  FILE* f = fopen(fp, "rb");
+  if (!f) {
+    printf("RGL: Could not load model '%s'.\n", fp);
+    return 0;
+  }
+  
+  RGL_MODEL modelptr = malloc(sizeof(RGL_MODELDATA));
+
+  // TODO: little and big endian
+  // HEADER
+  fread(&modelptr->verticesn, sizeof (UINT), 1, f);
+  fread(&modelptr->indicesn, sizeof (UINT), 1, f);
+  fread(&modelptr->skin.width, sizeof (USHORT), 1, f);
+  fread(&modelptr->skin.height, sizeof (USHORT), 1, f);
+  fread(&modelptr->skin.framesn, sizeof (USHORT), 1, f);
+  // Skin data
+  UINT skinpixelsn = modelptr->skin.width*modelptr->skin.height*modelptr->skin.framesn;
+  modelptr->skin.pixels = malloc(skinpixelsn);
+  fread(&modelptr->skin.pixels, skinpixelsn, 1, f);
+  // Vertex data
+  modelptr->vertices = malloc(sizeof (float) * modelptr->verticesn*3);
+  fread(modelptr->vertices, sizeof (float), modelptr->verticesn*3, f);
+  // Triangle index data
+  modelptr->indices = malloc(sizeof (UINT) * modelptr->indicesn*3);
+  fread(modelptr->indices, sizeof (UINT), modelptr->indicesn*3, f);
+
+  fclose(f);
+
+  modelptr->program = program;
+
+  return modelptr;
+}
+
+void RGL_freemodel(RGL_MODEL model, RGL_PROGRAM program) {
+  free(model->vertices);
+  free(model->indices);
+
+  rglDeleteBuffers(1, &model->vertex_bo);
+  rglDeleteBuffers(1, &model->index_bo);
+  rglDeleteVertexArrays(1, &model->vao);
+}
+
+RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags) {
+  RGL_BODY bodyptr = malloc(sizeof(RGL_BODYDATA));
+  // bodyptr->vao = rglGenVertexArrays()
+}
+void RGL_freebody(RGL_BODY program) {
+
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -266,7 +339,11 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
   };
 
   int pf = ChoosePixelFormat(hDC, &pfd);
-  SetPixelFormat(hDC, pf, &pfd);
+  if (!SetPixelFormat(hDC, pf, &pfd)) {
+    puts("RGL: Failed to set pixel format, possibly the bpp parameter was incorrect try 16,24,32.");
+    RGL_free();
+    return 0;
+  }
 
   hGLRC = wglCreateContext(hDC);
   if (!wglMakeCurrent(hDC, hGLRC)) {
@@ -293,32 +370,33 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
   return 1;
 }
 
-void RGL_refresh() {
+void RGL_begin(char doclear) {
+  if (doclear)
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n) {
+  for (int i = 0; i < n; i++) {
+    rglUseProgram(models[i+_i]->program);
+    rglBindVertexArray(models[i+_i]->vao);
+    rglDrawArrays(GL_TRIANGLES, 0, 3);
+  }
+}
+
+void RGL_end() {
+  SwapBuffers(hDC);
+
   static MSG Msg;
 
   while(PeekMessage(&(Msg), NULL, 0, 0, PM_REMOVE)) {
     TranslateMessage(&(Msg));
     DispatchMessageA(&(Msg));
   }
-
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  glBegin(GL_TRIANGLES);
-    glColor3f(1, 0, 0);
-    glVertex3f(1, 1, 0);
-    glColor3f(0, 1, 0);
-    glVertex3f(1, 0, 0);
-    glColor3f(0, 0, 1);
-    glVertex3f(0, 1, 0);
-  glEnd();
-
-  SwapBuffers(hDC);
 }
 
 void RGL_free() {
   wglMakeCurrent(hDC, NULL);
   wglDeleteContext(hGLRC);
-
 
   ReleaseDC(hWnd, hDC);
   DestroyWindow(hWnd);
