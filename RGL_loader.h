@@ -38,3 +38,4 @@ EXTERN void (*rglGetProgramiv) (GLuint program, GLenum pname, GLint *params);
 EXTERN void (*rglGetProgramBinary) (GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 EXTERN void (*rglProgramBinary) (GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 EXTERN void (*rglProgramParameteri) (GLuint program, GLenum pname, GLint value);
+EXTERN void (*rglValidateProgram) ( 	GLuint program);

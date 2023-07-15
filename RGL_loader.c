@@ -53,4 +53,5 @@ void RGL_loadgl() {
   rglGetProgramBinary = load("glGetProgramBinary");
   rglProgramBinary = load("glProgramBinary");
   rglProgramParameteri = load("glProgramParameteri");
+  rglValidateProgram = load("glValidateProgram");
 }

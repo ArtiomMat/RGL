@@ -37,8 +37,6 @@ UINT RGL_loadshader(const char* fp, UINT type) {
   char data[size+1];
   fread(data, size, 1, f);
   data[size] = '\0';
-  
-  puts(data);
 
   fclose(f);
 
@@ -71,7 +69,7 @@ UINT RGL_loadshader(const char* fp, UINT type) {
     info[0] = 'c';
     info[1] = 0;
     rglGetShaderInfoLog(shader, sizeof(info), NULL, info);
-    printf("RGL: Compilation of shader '%s' unsuccessful.\nINFO: '%s'\n", fp, info);
+    printf("RGL: Compilation of shader '%s' unsuccessful.\nINFO: %s\n", fp, info);
     RGL_freeshader(shader);
     return 0;
   }
@@ -86,7 +84,7 @@ void RGL_freeshader(UINT shader) {
 UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
   UINT program = rglCreateProgram();
   if (!program) {
-    printf("RGL: Creation of program failed.");
+    printf("RGL: Creation of program failed.\n");
     return 0;
   }
 
@@ -99,7 +97,7 @@ UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
   int success;
   rglGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    printf("RGL: Program linking failed.");
+    printf("RGL: Program linking failed.\n");
     return 0;
   }
 
@@ -109,7 +107,7 @@ UINT RGL_initprogram(UINT vertshader, UINT fragshader) {
 UINT RGL_loadprogram(const char* fp) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
-    printf("RGL: Program loading failed.");
+    printf("RGL: Program loading failed.\n");
     return 0;
   }
   
@@ -126,6 +124,15 @@ UINT RGL_loadprogram(const char* fp) {
 
   UINT program = rglCreateProgram();
   rglProgramBinary(program, format, data, len);
+
+  rglValidateProgram(program);
+  GLint status;
+  rglGetProgramiv(program, GL_VALIDATE_STATUS, &status);
+  if (!status) {
+    printf("RGL: Program '%s' is invalid.\n", fp);
+    RGL_freeprogram(program);
+    return 0;
+  }
 
   return program;
 }
