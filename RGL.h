@@ -58,7 +58,7 @@ typedef struct {
 // Just like a model, it is stored in RAM so it can be played around with via CPU.
 // A body is an instance of a model, it exists in the rendering context and has an offset and other realtime attributes.
 typedef struct {
-  RGL_MODEL* model;
+  RGL_MODEL model;
   RGL_VEC offset;
   RGL_VEC angles;
   // USHORT framei;
@@ -75,6 +75,7 @@ EXTERN UINT RGL_mousex, RGL_mousey;
 int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height);
 void RGL_begin(char doclear);
 void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n);
+void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
 void RGL_end();
 void RGL_free();
 // Shaders

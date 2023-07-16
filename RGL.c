@@ -8,6 +8,7 @@
 #include <GL/wglext.h>
 
 #include <stdio.h>
+#include <math.h>
 
 #define CLASSNAME "RGLWND"
 
@@ -21,6 +22,8 @@ static HGLRC hGLRC = NULL;
 typedef BOOL (*WGLSWAPINTERVAL) (int interval);
 
 static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
+
+static float max_d;
 
 // Pass the actual opengl enum to type, like GL_VERTEX_SHADER.
 RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
@@ -93,6 +96,18 @@ static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
   rglUniform3f(i, body->offset[0], body->offset[1], body->offset[2]);
   i = rglGetUniformLocation(program, "RGL_angles");
   rglUniform3f(i, body->angles[0], body->angles[1], body->angles[2]);
+}
+
+// init basic uniforms
+static void uniformsinit(RGL_PROGRAM program) {
+  INT i;
+  float pnear = 0.2f;
+  i = rglGetUniformLocation(program, "RGL_p_near");
+  rglUniform1f(i, pnear);
+  i = rglGetUniformLocation(program, "RGL_p_far");
+  rglUniform1f(i, 300.0f);
+  i = rglGetUniformLocation(program, "RGL_d_max");
+  rglUniform1f(i, max_d);
 }
 
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader) {
@@ -209,7 +224,6 @@ RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UIN
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texturew, textureh, 0, GL_RGB, GL_UNSIGNED_BYTE, texturedata);
   rglGenerateMipmap(GL_TEXTURE_2D);
 
-  printf("ERROR %d\n", glGetError());
 
   return modelptr;
 }
@@ -248,14 +262,23 @@ void RGL_freemodel(RGL_MODEL model) {
   rglDeleteBuffers(1, &model->ibo);
   rglDeleteVertexArrays(1, &model->vao);
   glDeleteTextures(1, &model->to);
+  
+  free(model);
 }
 
 RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags) {
   RGL_BODY bodyptr = malloc(sizeof(RGL_BODYDATA));
-  // bodyptr->vao = rglGenVertexArrays()
+  
+  bodyptr->model = model;
+  bodyptr->flags = flags;
+  
+  bodyptr->offset[0] = bodyptr->offset[1] = bodyptr->offset[2] = 0;
+  bodyptr->angles[0] = bodyptr->angles[1] = bodyptr->angles[2] = 0;
+  
+  return bodyptr;
 }
-void RGL_freebody(RGL_BODY program) {
-
+void RGL_freebody(RGL_BODY bodyptr) {
+  free(bodyptr);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -391,11 +414,15 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
   printf("RGL: OpenGL version is '%s'.\n", glGetString(GL_VERSION));
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glEnable(GL_DEPTH_TEST);
 
   RGL_loadgl();
 
-  glEnable(GL_DEPTH_TEST);
+  // Setup the projection matrix:
+  // Columns not rows
 
+  max_d = tanf(1.7/2) * 0.2f;
+  
   return 1;
 }
 
@@ -404,17 +431,38 @@ void RGL_begin(char doclear) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+static void drawmodel(RGL_MODEL model) {
+  rglUseProgram(model->program);
+
+  uniformsinit(model->program);
+
+  glBindTexture(GL_TEXTURE_2D, model->to);
+  rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+  rglBindVertexArray(model->vao);
+
+  rglDrawElements(GL_TRIANGLES, model->indicesn*3, GL_UNSIGNED_INT, 0);
+}
+
 void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n) {
   for (int i = 0; i < n; i++) {
-    rglUseProgram(models[i+_i]->program);
+    drawmodel(models[i+_i]);
+  } 
+}
 
-    glBindTexture(GL_TEXTURE_2D, models[i+_i]->to);
-    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i+_i]->ibo);
-    rglBindVertexArray(models[i+_i]->vao);
+void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
+  for (int i = 0; i < n; i++) {
+    RGL_MODEL model = bodies[i+_i]->model;
+    rglUseProgram(model->program);
 
-    rglDrawElements(GL_TRIANGLES, models[i+_i]->indicesn*3, GL_UNSIGNED_INT, 0);
+    uniformbody(model->program, bodies[i+_i]);
+    uniformsinit(model->program);
+
+    glBindTexture(GL_TEXTURE_2D, model->to);
+    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+    rglBindVertexArray(model->vao);
+
+    rglDrawElements(GL_TRIANGLES, model->indicesn*3, GL_UNSIGNED_INT, 0);
   }
-  
 }
 
 void RGL_end() {

@@ -75,4 +75,5 @@ void RGL_loadgl() {
   rglUniform4iv = load("glUniform4iv");
   
   rglGenerateMipmap = load("glGenerateMipmap");
+  rglGetUniformLocation = load("glGetUniformLocation");
 }

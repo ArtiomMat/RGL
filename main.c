@@ -2,7 +2,7 @@
 #include "TM.h"
 
 int main() {
-  TM_init(30);
+  TM_init(12);
   RGL_init(16, 0, 400, 400);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
@@ -36,13 +36,25 @@ int main() {
 
   RGL_MODEL model = RGL_initmodel(prog, vertices, 4, indices, 2, texturedata, 4, 4);
 
+  RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
+  bodies[0]->offset[0] += 3.5f;
+  bodies[1]->offset[2] += 5.0f;
+  bodies[1]->offset[1] += 5.0f;
   TM_initwait();
+
+  int i = 0;
+
   while (1) {
+    
+    bodies[0]->offset[2] += 0.2f;
+    bodies[2]->offset[2] += 0.5f;
+    bodies[1]->offset[1] -= 0.01f;
+    bodies[2]->offset[2] += 0.2f;
+
     RGL_begin(1);
-      RGL_drawmodels(&model, 0, 1);
+      RGL_drawbodies(bodies, 0, 3);
     RGL_end();
 
-    RGL_end();
     TM_wait();
     // puts("OK");
   }
