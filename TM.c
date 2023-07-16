@@ -53,8 +53,9 @@ void TM_wait() {
 
 	ULONG Delta = (ULONG)(TM_now() - LastFrameTime);
 	LONG WaitTime = TM_GameMSPF - Delta;
-	if (WaitTime > 0)
+	if (WaitTime > 0) {
 		Sleep(WaitTime);
+	}
 	else {
 		SkipN += (-WaitTime)/TM_GameMSPF;
 	}

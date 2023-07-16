@@ -54,4 +54,25 @@ void RGL_loadgl() {
   rglProgramBinary = load("glProgramBinary");
   rglProgramParameteri = load("glProgramParameteri");
   rglValidateProgram = load("glValidateProgram");
+  rglDrawElements = load("glDrawElements");
+  rglUniform1f = load("glUniform1f");
+
+  rglUniform2f = load("glUniform2f");
+  rglUniform3f = load("glUniform3f");
+  rglUniform4f = load("glUniform4f");
+  rglUniform1i = load("glUniform1i");
+  rglUniform2i = load("glUniform2i");
+  rglUniform3i = load("glUniform3i");
+  rglUniform4i = load("glUniform4i");
+
+  rglUniform1fv = load("glUniform1fv");
+  rglUniform2fv = load("glUniform2fv");
+  rglUniform3fv = load("glUniform3fv");
+  rglUniform4fv = load("glUniform4fv");
+  rglUniform1iv = load("glUniform1iv");
+  rglUniform2iv = load("glUniform2iv");
+  rglUniform3iv = load("glUniform3iv");
+  rglUniform4iv = load("glUniform4iv");
+  
+  rglGenerateMipmap = load("glGenerateMipmap");
 }

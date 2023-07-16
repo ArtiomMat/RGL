@@ -2,6 +2,10 @@
 
 out vec4 color;
 
+in vec2 texturecoord;
+
+uniform sampler2D RGL_texture;
+
 void main() {
-    color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    color = texture(RGL_texture, texturecoord);
 }

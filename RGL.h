@@ -27,22 +27,32 @@ enum {
   RGL_FRAGMENTSHADER,
 };
 
+enum {
+  RGL_LPIXELS=1, // Grayscale
+  RGL_RGBPIXELS=3, // Red Green Blue
+  RGL_RGBAPIXELS=4, // Red Green Blue Alpha
+};
+
 // A model can be played around with via CPU, since it's stored in RAM, and you don't have to update it, unlike an RGL_BODY.
 typedef struct {
-  float* vertices;
-  UINT* indices;
-  struct {
-    UCHAR* pixels;
-    USHORT width, height, framesn;
-  } skin;
-  UINT indicesn;
-  UINT verticesn;
+  // float* vertices;
+  // UINT* indices;
+  // struct {
+  //   UCHAR* pixels; // 0 to 1, the structure depends on channels
+  //   float* vertices; // UV wrapping data, Same count as vertices n.
+  //   UCHAR channelsn;
+  //   USHORT width, height;
+  // } texture;
+  // UINT indicesn;
+  // UINT verticesn;
 
   // OpenGL stuff
   RGL_PROGRAM program;
-  UINT vao;
-  UINT vertex_bo;
-  UINT index_bo;
+  UINT to; // texture object
+  UINT vao; // vertex array object
+  UINT vbo; // vertex buffer object
+  UINT ibo; // index/element buffer object
+  UINT indicesn;
 } RGL_MODELDATA, *RGL_MODEL;
 
 // Just like a model, it is stored in RAM so it can be played around with via CPU.
@@ -56,7 +66,8 @@ typedef struct {
 } RGL_BODYDATA, *RGL_BODY;
 
 EXTERN UINT RGL_width, RGL_height;
-EXTERN UCHAR RGL_colors[256][3];
+// Includes alpha
+EXTERN float RGL_colors[256*4];
 
 EXTERN UINT RGL_mousex, RGL_mousey;
 
@@ -76,9 +87,20 @@ RGL_PROGRAM RGL_loadprogram(const char* fp);
 void RGL_saveprogram(RGL_PROGRAM program, const char* fp);
 void RGL_freeprogram(RGL_PROGRAM program);
 // RGL_MODEL
+// Free all these mfs after calling, since now the GPU has them copied.
+// Initializes opengl part of the model
+// vbodata contains data of both the model vertices and the texture's vertices:
+// X Y Z U V ...
+// verticesn is the number of vbo elements there are.
+// ibodata simply contains data on the triangle array:
+// T0 T1 T2 ...
+// indicesn is the number of those triplets that make triangles.
+// texture must be in R G B format, for now...
+// texturew/h is pretty self explanitory.
+RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
 // You can set program to 0 for the default retro program.
 RGL_MODEL RGL_loadmodel(const char* fp, RGL_PROGRAM program);
-void RGL_freemodel(RGL_MODEL model, RGL_PROGRAM program);
+void RGL_freemodel(RGL_MODEL model);
 // RGL_BODY
 RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags);
 void RGL_freebody(RGL_BODY program);

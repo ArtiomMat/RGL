@@ -39,3 +39,26 @@ EXTERN void (*rglGetProgramBinary) (GLuint program, GLsizei bufSize, GLsizei *le
 EXTERN void (*rglProgramBinary) (GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 EXTERN void (*rglProgramParameteri) (GLuint program, GLenum pname, GLint value);
 EXTERN void (*rglValidateProgram) ( 	GLuint program);
+
+EXTERN void (*rglDrawElements)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
+
+EXTERN GLint (*rglGetUniformLocation)(GLuint program, const GLchar *name);
+EXTERN void (*rglUniform1f)(GLint location, GLfloat v0);
+EXTERN void (*rglUniform2f)(GLint location, GLfloat v0, GLfloat v1);
+EXTERN void (*rglUniform3f)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+EXTERN void (*rglUniform4f)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+EXTERN void (*rglUniform1i)(GLint location, GLint v0);
+EXTERN void (*rglUniform2i)(GLint location, GLint v0, GLint v1);
+EXTERN void (*rglUniform3i)(GLint location, GLint v0, GLint v1, GLint v2);
+EXTERN void (*rglUniform4i)(GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
+
+EXTERN void (*rglUniform1fv)(GLint location, GLsizei count, const GLfloat* value);
+EXTERN void (*rglUniform2fv)(GLint location, GLsizei count, const GLfloat* value);
+EXTERN void (*rglUniform3fv)(GLint location, GLsizei count, const GLfloat* value);
+EXTERN void (*rglUniform4fv)(GLint location, GLsizei count, const GLfloat* value);
+EXTERN void (*rglUniform1iv)(GLint location, GLsizei count, const GLint* value);
+EXTERN void (*rglUniform2iv)(GLint location, GLsizei count, const GLint* value);
+EXTERN void (*rglUniform3iv)(GLint location, GLsizei count, const GLint* value);
+EXTERN void (*rglUniform4iv)(GLint location, GLsizei count, const GLint* value);
+
+EXTERN void (*rglGenerateMipmap) (GLenum target);

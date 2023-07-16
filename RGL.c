@@ -81,6 +81,20 @@ void RGL_freeshader(RGL_SHADER shader) {
   rglDeleteShader(shader);
 }
 
+static void uniformpalette(RGL_PROGRAM program) {
+  INT i;
+  i = rglGetUniformLocation(program, "RGL_palette");
+  rglUniform4fv(i, 256, RGL_colors);
+}
+
+static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
+  INT i;
+  i = rglGetUniformLocation(program, "RGL_offset");
+  rglUniform3f(i, body->offset[0], body->offset[1], body->offset[2]);
+  i = rglGetUniformLocation(program, "RGL_angles");
+  rglUniform3f(i, body->angles[0], body->angles[1], body->angles[2]);
+}
+
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader) {
   UINT program = rglCreateProgram();
   if (!program) {
@@ -158,69 +172,82 @@ void RGL_freeprogram(RGL_PROGRAM program) {
   rglDeleteProgram(program);
 }
 
-// TODO: Remove
-static RGL_MODEL lastmodel;
-
-// Initializes opengl part
-void RGL_initmodel(RGL_MODEL modelptr) {
+RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh) {
+  RGL_MODEL modelptr = malloc(sizeof(RGL_MODELDATA));
+  modelptr->program = program;
+  modelptr->indicesn = indicesn;
+  // vao
   rglGenVertexArrays(1, &modelptr->vao);
-
   rglBindVertexArray(modelptr->vao);
 
-  // Setup the vertex buffer object
-  rglGenBuffers(1, &modelptr->vertex_bo);
-  rglBindBuffer(GL_ARRAY_BUFFER, modelptr->vertex_bo); // Use?
-  rglBufferData(GL_ARRAY_BUFFER, modelptr->verticesn * sizeof (float) * 3, modelptr->vertices, /*TODO*/GL_STATIC_DRAW); // Copy
-  rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), 0); // Cofigure
-  rglEnableVertexAttribArray(0); 
+  // vbo
+  rglGenBuffers(1, &modelptr->vbo);
+  rglBindBuffer(GL_ARRAY_BUFFER, modelptr->vbo);
+  // Copy to OpenGL
+  rglBufferData(GL_ARRAY_BUFFER, verticesn * sizeof (GL_FLOAT) * 5, vbodata, /*TODO*/GL_STATIC_DRAW);
+  // Cofigure attributes for the vertices of the model + the vertices of the texture
+  rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), 0);
+  rglEnableVertexAttribArray(0);
+  rglVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (void*)(3 * sizeof(GL_FLOAT)));
+  rglEnableVertexAttribArray(1);
 
-  printf("ERROR: %d\n", glGetError());
+  // ibo
+  rglGenBuffers(1, &modelptr->ibo);
+  rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelptr->ibo);
+  // Copy
+  rglBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesn * sizeof (UINT) * 3, ibodata, /*TODO*/GL_STATIC_DRAW);
 
-  lastmodel = modelptr;
+  // to
+  glGenTextures(1, &modelptr->to);
+  glBindTexture(GL_TEXTURE_2D, modelptr->to);
+  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texturew, textureh, 0, GL_RGB, GL_UNSIGNED_BYTE, texturedata);
+  rglGenerateMipmap(GL_TEXTURE_2D);
+
+  printf("ERROR %d\n", glGetError());
+
+  return modelptr;
 }
 
 RGL_MODEL RGL_loadmodel(const char* fp, RGL_PROGRAM program) {
-
   FILE* f = fopen(fp, "rb");
   if (!f) {
     printf("RGL: Could not load model '%s'.\n", fp);
     return 0;
   }
   
-  RGL_MODEL modelptr = malloc(sizeof(RGL_MODELDATA));
+  RGL_MODEL modelptr;
+
+  UINT header[4];
 
   // TODO: little and big endian
   // HEADER
-  fread(&modelptr->verticesn, sizeof (UINT), 1, f);
-  fread(&modelptr->indicesn, sizeof (UINT), 1, f);
-  fread(&modelptr->skin.width, sizeof (USHORT), 1, f);
-  fread(&modelptr->skin.height, sizeof (USHORT), 1, f);
-  fread(&modelptr->skin.framesn, sizeof (USHORT), 1, f);
-  // Skin data
-  UINT skinpixelsn = modelptr->skin.width*modelptr->skin.height*modelptr->skin.framesn;
-  modelptr->skin.pixels = malloc(skinpixelsn);
-  fread(&modelptr->skin.pixels, skinpixelsn, 1, f);
-  // Vertex data
-  modelptr->vertices = malloc(sizeof (float) * modelptr->verticesn*3);
-  fread(modelptr->vertices, sizeof (float), modelptr->verticesn*3, f);
-  // Triangle index data
-  modelptr->indices = malloc(sizeof (UINT) * modelptr->indicesn*3);
-  fread(modelptr->indices, sizeof (UINT), modelptr->indicesn*3, f);
+  fread(header, sizeof (UINT), 4, f);
+  float vbodata[header[0]];
+  UINT ibodata[header[1]];
+  UCHAR texturedata[header[2]*header[3]];
+
+  fread(vbodata, header[0] * 5, sizeof (float), f);
+  fread(ibodata, header[1] * 3, sizeof (UINT), f);
+  fread(texturedata, header[2]*header[3], sizeof (UCHAR), f);
 
   fclose(f);
 
-  modelptr->program = program;
+  modelptr = RGL_initmodel(program, vbodata, header[0], ibodata, header[1], texturedata, header[2], header[3]);
 
   return modelptr;
 }
 
-void RGL_freemodel(RGL_MODEL model, RGL_PROGRAM program) {
-  free(model->vertices);
-  free(model->indices);
-
-  rglDeleteBuffers(1, &model->vertex_bo);
-  rglDeleteBuffers(1, &model->index_bo);
+void RGL_freemodel(RGL_MODEL model) {
+  rglDeleteBuffers(1, &model->vbo);
+  rglDeleteBuffers(1, &model->ibo);
   rglDeleteVertexArrays(1, &model->vao);
+  glDeleteTextures(1, &model->to);
 }
 
 RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags) {
@@ -367,20 +394,27 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
 
   RGL_loadgl();
 
+  glEnable(GL_DEPTH_TEST);
+
   return 1;
 }
 
 void RGL_begin(char doclear) {
   if (doclear)
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n) {
   for (int i = 0; i < n; i++) {
     rglUseProgram(models[i+_i]->program);
+
+    glBindTexture(GL_TEXTURE_2D, models[i+_i]->to);
+    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, models[i+_i]->ibo);
     rglBindVertexArray(models[i+_i]->vao);
-    rglDrawArrays(GL_TRIANGLES, 0, 3);
+
+    rglDrawElements(GL_TRIANGLES, models[i+_i]->indicesn*3, GL_UNSIGNED_INT, 0);
   }
+  
 }
 
 void RGL_end() {
