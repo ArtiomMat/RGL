@@ -31,6 +31,20 @@ static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
 // We then normalize d using RGL_d_max*2
 static float dmaxtable[DMAXTABLESIZE];
 
+static RGL_EYE usedeye = NULL;
+
+static void vecsub(RGL_VEC a, RGL_VEC b, RGL_VEC out) {
+  out[0] = a[0] - b[0];
+  out[1] = a[1] - b[1];
+  out[2] = a[2] - b[2];
+}
+
+static void zerovec(RGL_VEC a) {
+  a[0] = 0;
+  a[1] = 0;
+  a[2] = 0;
+}
+
 // Pass the actual opengl enum to type, like GL_VERTEX_SHADER.
 RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
   FILE* f = fopen(fp, "rb");
@@ -102,18 +116,6 @@ static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
   rglUniform3f(i, body->offset[0], body->offset[1], body->offset[2]);
   i = rglGetUniformLocation(program, "RGL_angles");
   rglUniform3f(i, body->angles[0], body->angles[1], body->angles[2]);
-}
-
-// init basic uniforms
-static void blockuniformsinit(RGL_PROGRAM program, float fov) {
-  INT i;
-  float pnear = 0.2f;
-  i = rglGetUniformLocation(program, "RGL_p_near");
-  rglUniform1f(i, pnear);
-  i = rglGetUniformLocation(program, "RGL_p_far");
-  rglUniform1f(i, 300.0f);
-  i = rglGetUniformLocation(program, "RGL_d_max");
-  rglUniform1f(i, RGL_d_max);
 }
 
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader) {
@@ -193,9 +195,57 @@ void RGL_freeprogram(RGL_PROGRAM program) {
   rglDeleteProgram(program);
 }
 
-RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh) {
+static void calcd_max(RGL_EYE eye) {
+  eye->info.d_max = tanf(eye->fov/2) * eye->info.p_near;
+}
+
+// Assumes program is currently in use
+static void useprogram(RGL_EYE eye) {
+  // Bind and copy ubo data.
+  calcd_max(eye);
+  rglUseProgram(eye->program);
+  rglBindBuffer(GL_UNIFORM_BUFFER, eye->ubo);
+  rglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(eye->info), &eye->info);
+}
+
+RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
+  RGL_EYE eyeptr = malloc(sizeof(RGL_EYEDATA));
+  eyeptr->program = program;
+
+  zerovec(eyeptr->info.offset);
+  // eyeptr->info.offset[2] = -10;
+  zerovec(eyeptr->info.angles);
+  eyeptr->fov = fov;
+  eyeptr->info.p_far = 500.0f;
+  eyeptr->info.p_near = 0.01f;
+  calcd_max(eyeptr);
+  
+  // Setup the ubo that holds the eye info, which is in eyeptr->info
+  rglUseProgram(eyeptr->program);
+  rglGenBuffers(1, &eyeptr->ubo);
+  rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->ubo);
+  rglBufferData(GL_UNIFORM_BUFFER, sizeof(eyeptr->info), 0, GL_DYNAMIC_DRAW);
+  
+  int i = rglGetUniformBlockIndex(program, "RGL_eye");
+  rglUniformBlockBinding(program, i, 4);
+  rglBindBufferBase(GL_UNIFORM_BUFFER, 4, eyeptr->ubo);
+
+
+  if (!usedeye)
+    usedeye = eyeptr;
+
+  return eyeptr;
+}
+void RGL_freeeye(RGL_EYE eye) {
+  if (usedeye == eye)
+    usedeye = NULL;
+
+  rglDeleteBuffers(1, &eye->ubo);
+  free(eye);
+}
+
+RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh) {
   RGL_MODEL modelptr = malloc(sizeof(RGL_MODELDATA));
-  modelptr->program = program;
   modelptr->indicesn = indicesn;
   // vao
   rglGenVertexArrays(1, &modelptr->vao);
@@ -205,7 +255,7 @@ RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UIN
   rglGenBuffers(1, &modelptr->vbo);
   rglBindBuffer(GL_ARRAY_BUFFER, modelptr->vbo);
   // Copy to OpenGL
-  rglBufferData(GL_ARRAY_BUFFER, verticesn * sizeof (GL_FLOAT) * 5, vbodata, /*TODO*/GL_STATIC_DRAW);
+  rglBufferData(GL_ARRAY_BUFFER, verticesn * sizeof (GL_FLOAT) * 5, vbodata, GL_STATIC_DRAW);
   // Cofigure attributes for the vertices of the model + the vertices of the texture
   rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), 0);
   rglEnableVertexAttribArray(0);
@@ -216,7 +266,7 @@ RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UIN
   rglGenBuffers(1, &modelptr->ibo);
   rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelptr->ibo);
   // Copy
-  rglBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesn * sizeof (UINT) * 3, ibodata, /*TODO*/GL_STATIC_DRAW);
+  rglBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesn * sizeof (UINT) * 3, ibodata, GL_STATIC_DRAW);
 
   // to
   glGenTextures(1, &modelptr->to);
@@ -234,7 +284,7 @@ RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UIN
   return modelptr;
 }
 
-RGL_MODEL RGL_loadmodel(const char* fp, RGL_PROGRAM program) {
+RGL_MODEL RGL_loadmodel(const char* fp) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
     printf("RGL: Could not load model '%s'.\n", fp);
@@ -258,7 +308,7 @@ RGL_MODEL RGL_loadmodel(const char* fp, RGL_PROGRAM program) {
 
   fclose(f);
 
-  modelptr = RGL_initmodel(program, vbodata, header[0], ibodata, header[1], texturedata, header[2], header[3]);
+  modelptr = RGL_initmodel(vbodata, header[0], ibodata, header[1], texturedata, header[2], header[3]);
 
   return modelptr;
 }
@@ -328,6 +378,7 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
 
   RGL_width = width;
   RGL_height = height;
+  usedeye = NULL;
 
   // Create the class
   WNDCLASSEX wc = {0};
@@ -426,15 +477,7 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
 
   // Setup the projection matrix:
   // Columns not rows
-
-  // RGL_d_max = tanf(1.7/2) * 0.2f;
   
-  float fovjmp = 360.0f/DMAXTABLESIZE;
-  int i = 0;
-  for (float fov = fovjmp; fov < DMAXTABLESIZE-1; fov += fovjmp, i++) {
-    dmaxtable[i] = tanf(fov/2)*RGL_p_near;
-  }
-
   return 1;
 }
 
@@ -443,31 +486,22 @@ void RGL_begin(char doclear) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-static void drawmodel(RGL_MODEL model) {
-  rglUseProgram(model->program);
-
-  uniformsinit(model->program);
-
-  glBindTexture(GL_TEXTURE_2D, model->to);
-  rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
-  rglBindVertexArray(model->vao);
-
-  rglDrawElements(GL_TRIANGLES, model->indicesn*3, GL_UNSIGNED_INT, 0);
-}
 
 void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n) {
   for (int i = 0; i < n; i++) {
-    drawmodel(models[i+_i]);
+    // drawmodel(models[i+_i]);
   } 
 }
 
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
+  if (!usedeye)
+    puts("RGL: NO USED CAMERA!");
+
   for (int i = 0; i < n; i++) {
     RGL_MODEL model = bodies[i+_i]->model;
-    rglUseProgram(model->program);
+    useprogram(usedeye);
 
-    uniformbody(model->program, bodies[i+_i]);
-    uniformsinit(model->program);
+    uniformbody(usedeye->program, bodies[i+_i]);
 
     glBindTexture(GL_TEXTURE_2D, model->to);
     rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
@@ -475,6 +509,11 @@ void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
 
     rglDrawElements(GL_TRIANGLES, model->indicesn*3, GL_UNSIGNED_INT, 0);
   }
+
+  // int i = rglGetUniformLocation(usedeye->program, "RGL_eye");
+  // float debug;
+  // rglGetUniformfv(usedeye->program, i, &debug);
+  // printf("%f\n", debug);
 }
 
 void RGL_end() {

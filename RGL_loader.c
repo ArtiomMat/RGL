@@ -74,6 +74,8 @@ void RGL_loadgl() {
   rglUniform3iv = load("glUniform3iv");
   rglUniform4iv = load("glUniform4iv");
   
+  rglGetUniformfv = load("glGetUniformfv");
+  
   rglGenerateMipmap = load("glGenerateMipmap");
   rglGetUniformLocation = load("glGetUniformLocation");
 
@@ -86,4 +88,6 @@ void RGL_loadgl() {
   rglGetActiveUniformsiv = load("glGetActiveUniformsiv");
   rglGetActiveUniformName = load("glGetActiveUniformName");
   rglGetActiveUniform = load("glGetActiveUniform");
+  rglBufferSubData = load("glBufferSubData");
+
 }

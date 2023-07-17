@@ -13,6 +13,8 @@ int main() {
 
   // RGL_PROGRAM prog = RGL_loadprogram("RGL/program.glpb");
 
+  RGL_EYE eye = RGL_initeye(prog, 1.7);
+
   float vertices[] = {
     // positions          // texture coords
      0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
@@ -43,26 +45,26 @@ int main() {
     0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
   };
 
-  RGL_MODEL model = RGL_initmodel(prog, vertices, 4, indices, 2, texturedata, 4, 4);
-  RGL_MODEL model2 = RGL_initmodel(prog, vertices, 4, indices, 2, texturedata2, 4, 4);
+  RGL_MODEL model = RGL_initmodel(vertices, 4, indices, 2, texturedata, 4, 4);
+  RGL_MODEL model2 = RGL_initmodel(vertices, 4, indices, 2, texturedata2, 4, 4);
 
   RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model2, 0), RGL_initbody(model, 0)};
-  bodies[0]->offset[0] += 3.5f;
-  bodies[1]->offset[2] += 5.0f;
-  bodies[1]->offset[1] += 5.0f;
-  TM_initwait();
+  bodies[0]->offset[2] += 3.5f;
+  // bodies[1]->offset[2] += 5.0f;
+  // bodies[1]->offset[1] += 5.0f;
 
   int i = 0;
 
+  TM_initwait();
   while (1) {
     
-    bodies[0]->offset[2] += 0.2f;
-    bodies[2]->offset[2] += 0.1f;
-    bodies[1]->offset[1] -= 0.2f;
-    bodies[2]->offset[2] += 0.2f;
+    // bodies[0]->offset[2] += 0.2f;
+    // bodies[2]->offset[2] += 0.1f;
+    // bodies[1]->offset[1] -= 0.2f;
+    // bodies[2]->offset[2] += 0.2f;
 
     RGL_begin(1);
-      RGL_drawbodies(bodies, 0, 3);
+      RGL_drawbodies(bodies, 0, 1);
     RGL_end();
 
     TM_wait();

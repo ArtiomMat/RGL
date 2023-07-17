@@ -27,11 +27,20 @@ enum {
   RGL_FRAGMENTSHADER,
 };
 
-enum {
-  RGL_LPIXELS=1, // Grayscale
-  RGL_RGBPIXELS=3, // Red Green Blue
-  RGL_RGBAPIXELS=4, // Red Green Blue Alpha
-};
+typedef struct {
+  struct {
+    RGL_VEC offset;
+    float padding1; // Padding to align angles to a 16-byte boundary
+    RGL_VEC angles;
+    // float padding2; // Padding to align subsequent members
+    float p_near;
+    float p_far;
+    float d_max;
+  } info;
+  float fov;
+  RGL_PROGRAM program;
+  UINT ubo; // What contains shader information about the camera
+} RGL_EYEDATA, *RGL_EYE;
 
 // A model can be played around with via CPU, since it's stored in RAM, and you don't have to update it, unlike an RGL_BODY.
 typedef struct {
@@ -47,7 +56,6 @@ typedef struct {
   // UINT verticesn;
 
   // OpenGL stuff
-  RGL_PROGRAM program;
   UINT to; // texture object
   UINT vao; // vertex array object
   UINT vbo; // vertex buffer object
@@ -73,20 +81,31 @@ EXTERN UINT RGL_mousex, RGL_mousey;
 
 // General RGL
 int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height);
+// Sets the currently used eye for rendering, by default it will be the first eye you create.
+void RGL_useeye(RGL_EYE eye);
+// Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change the used eye in RGL_useeye, but the first eye you create is set automatically.
 void RGL_begin(char doclear);
 void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n);
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
 void RGL_end();
 void RGL_free();
-// Shaders
+
+// RGL_SHADER
 RGL_SHADER RGL_loadshader(const char* fp, UINT type);
 void RGL_freeshader(RGL_SHADER shader);
-// Program
+
+// RGL_PROGRAM
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader);
 RGL_PROGRAM RGL_loadprogram(const char* fp);
 // For caching the program in the disk.
 void RGL_saveprogram(RGL_PROGRAM program, const char* fp);
 void RGL_freeprogram(RGL_PROGRAM program);
+
+// RGL_EYE
+// fov is in radians.
+RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov);
+void RGL_freeeye(RGL_EYE eye);
+
 // RGL_MODEL
 // Free all these mfs after calling, since now the GPU has them copied.
 // Initializes opengl part of the model
@@ -98,10 +117,10 @@ void RGL_freeprogram(RGL_PROGRAM program);
 // indicesn is the number of those triplets that make triangles.
 // texture must be in R G B format, for now...
 // texturew/h is pretty self explanitory.
-RGL_MODEL RGL_initmodel(RGL_PROGRAM program, float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
+RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
 // You can set program to 0 for the default retro program.
-RGL_MODEL RGL_loadmodel(const char* fp, RGL_PROGRAM program);
+RGL_MODEL RGL_loadmodel(const char* fp);
 void RGL_freemodel(RGL_MODEL model);
 // RGL_BODY
 RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags);
-void RGL_freebody(RGL_BODY program);
+void RGL_freebody(RGL_BODY body);
