@@ -17,7 +17,7 @@ int main() {
 
   float vertices[] = {
     // positions          // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+     0.5f,  0.5f, -0.5f,   1.0f, 1.0f,   // top right
      0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
     -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
@@ -27,13 +27,13 @@ int main() {
     1, 2, 3    // second triangle
   };  
   UCHAR texturedata[] = {
-    255,0  ,0  ,    0  ,255,0  ,    255,0  ,0  ,    0  ,255,0  ,
+    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
 
-    0  ,255,0  ,    255,0  ,0  ,    0  ,255,0  ,    255,0  ,0  ,
+    255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
 
-    255,0  ,0  ,    0  ,255,0  ,    255,0  ,0  ,    0  ,255,0  ,
+    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
 
-    0  ,255,0  ,    255,0  ,0  ,    0  ,255,0  ,    255,0  ,0  ,
+    255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
   };
   UCHAR texturedata2[] = {
     0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
@@ -48,10 +48,13 @@ int main() {
   RGL_MODEL model = RGL_initmodel(vertices, 4, indices, 2, texturedata, 4, 4);
   RGL_MODEL model2 = RGL_initmodel(vertices, 4, indices, 2, texturedata2, 4, 4);
 
+  eye->info.offset[2] = -5;
+
   RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model2, 0), RGL_initbody(model, 0)};
-  bodies[0]->offset[2] += 3.5f;
-  bodies[1]->offset[2] += 5.0f;
-  bodies[1]->offset[1] += 5.0f;
+  bodies[0]->offset[2] += 15.5f;
+  bodies[1]->offset[0] += 5.0f;
+  bodies[2]->offset[1] += 2.0f;
+  bodies[2]->offset[2] += 2.0f;
 
   int i = 0;
 
@@ -64,7 +67,7 @@ int main() {
     // bodies[2]->offset[2] += 0.2f;
 
     RGL_begin(1);
-      RGL_drawbodies(bodies, 3, 1);
+      RGL_drawbodies(bodies, 0, 3);
     RGL_end();
 
     TM_wait();
