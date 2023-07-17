@@ -23,7 +23,13 @@ typedef BOOL (*WGLSWAPINTERVAL) (int interval);
 
 static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
 
-static float max_d;
+#define DMAXTABLESIZE 16
+// Cached dmax-es
+// A constant sent to vertex shader.
+// If we look at the perspective as a fustrum, this is the size of the smaller part.
+// The reason it is RGL_d_max is because there is a d parameter that is the signed distance from the center of the screen.
+// We then normalize d using RGL_d_max*2
+static float dmaxtable[DMAXTABLESIZE];
 
 // Pass the actual opengl enum to type, like GL_VERTEX_SHADER.
 RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
@@ -99,7 +105,7 @@ static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
 }
 
 // init basic uniforms
-static void uniformsinit(RGL_PROGRAM program) {
+static void blockuniformsinit(RGL_PROGRAM program, float fov) {
   INT i;
   float pnear = 0.2f;
   i = rglGetUniformLocation(program, "RGL_p_near");
@@ -107,7 +113,7 @@ static void uniformsinit(RGL_PROGRAM program) {
   i = rglGetUniformLocation(program, "RGL_p_far");
   rglUniform1f(i, 300.0f);
   i = rglGetUniformLocation(program, "RGL_d_max");
-  rglUniform1f(i, max_d);
+  rglUniform1f(i, RGL_d_max);
 }
 
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader) {
@@ -421,8 +427,14 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
   // Setup the projection matrix:
   // Columns not rows
 
-  max_d = tanf(1.7/2) * 0.2f;
+  // RGL_d_max = tanf(1.7/2) * 0.2f;
   
+  float fovjmp = 360.0f/DMAXTABLESIZE;
+  int i = 0;
+  for (float fov = fovjmp; fov < DMAXTABLESIZE-1; fov += fovjmp, i++) {
+    dmaxtable[i] = tanf(fov/2)*RGL_p_near;
+  }
+
   return 1;
 }
 

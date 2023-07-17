@@ -76,4 +76,14 @@ void RGL_loadgl() {
   
   rglGenerateMipmap = load("glGenerateMipmap");
   rglGetUniformLocation = load("glGetUniformLocation");
+
+  rglUniformBlockBinding = load("glUniformBlockBinding");
+  rglGetUniformBlockIndex = load("glGetUniformBlockIndex");
+  rglGetActiveUniformBlockiv = load("glGetActiveUniformBlockiv");
+  rglGetActiveUniformBlockName = load("glGetActiveUniformBlockName");
+  rglBindBufferBase = load("glBindBufferBase");
+  rglGetUniformIndices = load("glGetUniformIndices");
+  rglGetActiveUniformsiv = load("glGetActiveUniformsiv");
+  rglGetActiveUniformName = load("glGetActiveUniformName");
+  rglGetActiveUniform = load("glGetActiveUniform");
 }

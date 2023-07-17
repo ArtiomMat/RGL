@@ -33,10 +33,20 @@ int main() {
 
     0  ,255,0  ,    255,0  ,0  ,    0  ,255,0  ,    255,0  ,0  ,
   };
+  UCHAR texturedata2[] = {
+    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
+
+    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
+
+    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
+
+    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
+  };
 
   RGL_MODEL model = RGL_initmodel(prog, vertices, 4, indices, 2, texturedata, 4, 4);
+  RGL_MODEL model2 = RGL_initmodel(prog, vertices, 4, indices, 2, texturedata2, 4, 4);
 
-  RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
+  RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model2, 0), RGL_initbody(model, 0)};
   bodies[0]->offset[0] += 3.5f;
   bodies[1]->offset[2] += 5.0f;
   bodies[1]->offset[1] += 5.0f;
@@ -47,8 +57,8 @@ int main() {
   while (1) {
     
     bodies[0]->offset[2] += 0.2f;
-    bodies[2]->offset[2] += 0.5f;
-    bodies[1]->offset[1] -= 0.01f;
+    bodies[2]->offset[2] += 0.1f;
+    bodies[1]->offset[1] -= 0.2f;
     bodies[2]->offset[2] += 0.2f;
 
     RGL_begin(1);

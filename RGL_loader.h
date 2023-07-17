@@ -62,3 +62,13 @@ EXTERN void (*rglUniform3iv)(GLint location, GLsizei count, const GLint* value);
 EXTERN void (*rglUniform4iv)(GLint location, GLsizei count, const GLint* value);
 
 EXTERN void (*rglGenerateMipmap) (GLenum target);
+
+EXTERN void (*rglUniformBlockBinding) (GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
+EXTERN void (*rglGetUniformBlockIndex) (GLuint program, const GLchar *uniformBlockName);
+EXTERN void (*rglGetActiveUniformBlockiv) (GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint *params);
+EXTERN void (*rglGetActiveUniformBlockName) (GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei *length, GLchar *uniformBlockName);
+EXTERN void (*rglBindBufferBase) (GLenum target, GLuint index, GLuint buffer);
+EXTERN void (*rglGetUniformIndices) (GLuint program, GLsizei uniformCount, const GLchar **uniformNames, GLuint *uniformIndices);
+EXTERN void (*rglGetActiveUniformsiv) (GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname, GLint *params);
+EXTERN void (*rglGetActiveUniformName) (GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei *length, GLchar *uniformName);
+EXTERN void (*rglGetActiveUniform) (GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);

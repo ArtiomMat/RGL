@@ -24,7 +24,7 @@ float getd(float h) {
 
 // There are two d_max so it's a parameter
 float normalize_d(float d, float d_max) {
-  return -d/(2*d_max);
+  return d/(2*d_max);
 }
 
 void main() {
