@@ -50,8 +50,8 @@ int main() {
 
   RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model2, 0), RGL_initbody(model, 0)};
   bodies[0]->offset[2] += 3.5f;
-  // bodies[1]->offset[2] += 5.0f;
-  // bodies[1]->offset[1] += 5.0f;
+  bodies[1]->offset[2] += 5.0f;
+  bodies[1]->offset[1] += 5.0f;
 
   int i = 0;
 
@@ -64,7 +64,7 @@ int main() {
     // bodies[2]->offset[2] += 0.2f;
 
     RGL_begin(1);
-      RGL_drawbodies(bodies, 0, 1);
+      RGL_drawbodies(bodies, 3, 1);
     RGL_end();
 
     TM_wait();
