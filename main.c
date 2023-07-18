@@ -3,7 +3,7 @@
 
 int main() {
   TM_init(30);
-  RGL_init(0, 400, 400);
+  RGL_init(0, 600, 400);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
@@ -56,13 +56,19 @@ int main() {
   bodies[2]->offset[1] += 2.0f;
   bodies[2]->offset[2] += 2.0f;
 
+  // eye->info.angles[1] -= 1;
   int i = 0;
 
 
   TM_initwait();
   while (1) {
     
-    eye->info.angles[1] += 0.1;
+    // eye->info.angles[1] += 0.01;
+
+    bodies[1]->angles[1] -= 0.3;
+    bodies[0]->angles[2] -= 0.05;
+    bodies[1]->angles[2] += 0.2;
+    bodies[2]->angles[1] += 0.1;
 
     RGL_drawbodies(bodies, 0, 3);
     RGL_refresh();
