@@ -28,6 +28,16 @@ enum {
 };
 
 typedef struct {
+  UINT type;
+  union {
+    struct {
+      UINT code;
+    } key;
+
+  };
+} RGL_INPUT;
+
+typedef struct {
   struct {
     RGL_VEC offset;
     float padding1; // Padding to align angles to a 16-byte boundary
@@ -80,7 +90,8 @@ EXTERN float RGL_colors[256*4];
 EXTERN UINT RGL_mousex, RGL_mousey;
 
 // General RGL
-int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height);
+// I don't recommend using frame capping if you vsync.
+int RGL_init(UCHAR vsync, int width, int height);
 // Sets the currently used eye for rendering, by default it will be the first eye you create.
 void RGL_useeye(RGL_EYE eye);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change the used eye in RGL_useeye, but the first eye you create is set automatically.

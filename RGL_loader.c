@@ -73,7 +73,7 @@ void RGL_loadgl() {
   rglUniform2iv = load("glUniform2iv");
   rglUniform3iv = load("glUniform3iv");
   rglUniform4iv = load("glUniform4iv");
-  
+
   rglGetUniformfv = load("glGetUniformfv");
   
   rglGenerateMipmap = load("glGenerateMipmap");
@@ -90,4 +90,7 @@ void RGL_loadgl() {
   rglGetActiveUniform = load("glGetActiveUniform");
   rglBufferSubData = load("glBufferSubData");
 
+  #ifdef _WIN32
+    rglSwapInterval = load("wglSwapIntervalEXT");
+  #endif
 }

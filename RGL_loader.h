@@ -75,3 +75,5 @@ EXTERN void (*rglGetActiveUniformsiv) (GLuint program, GLsizei uniformCount, con
 EXTERN void (*rglGetActiveUniformName) (GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei *length, GLchar *uniformName);
 EXTERN void (*rglGetActiveUniform) (GLuint program, GLuint uniformIndex, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 EXTERN void (*rglBufferSubData) (GLenum target, GLintptr offset, GLsizeiptr size, const void * data);
+
+EXTERN int (*rglSwapInterval) (int interval);

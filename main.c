@@ -3,7 +3,7 @@
 
 int main() {
   TM_init(12);
-  RGL_init(16, 0, 400, 400);
+  RGL_init(0, 400, 400);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
@@ -13,7 +13,7 @@ int main() {
 
   // RGL_PROGRAM prog = RGL_loadprogram("RGL/program.glpb");
 
-  RGL_EYE eye = RGL_initeye(prog, 1.7);
+  RGL_EYE eye = RGL_initeye(prog, 1.2);
 
   float vertices[] = {
     // positions          // texture coords
@@ -61,6 +61,9 @@ int main() {
   TM_initwait();
   while (1) {
     
+  eye->info.angles[1] += 0.07;
+  // if (eye->info.angles[1] >= 3.141*2)
+  //   eye->info.angles[1] = 0;
     // bodies[0]->offset[2] += 0.2f;
     // bodies[2]->offset[2] += 0.1f;
     // bodies[1]->offset[1] -= 0.2f;

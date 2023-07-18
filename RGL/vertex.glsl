@@ -31,15 +31,39 @@ float normalize_d(float d, float d_max) {
   // return d/(d_max);
 }
 
+/*
+  Around y axis: coord(x,z)
+  Around x axis: coord(y,z)
+  Around z axis: coord(y,x)
+*/
+vec2 rotate(float angle, vec2 coord) {
+  float mag = length(coord);
+  if (coord.x != 0)
+    angle = angle + atan(coord.x/coord.y);
+  coord.x = sin(angle) * mag;
+  coord.y = cos(angle) * mag;
+
+  return coord;
+}
+
 void main() {
   texturecoord = i_texturevert; // For the fragment shader
 
-  float z = vert.z+RGL_offset.z-eye_offset.z;
+  vec3 finale = vert+RGL_offset-eye_offset;
+  // finale.xy = rotate(eye_angles.z, finale.xy);
+  finale.xz = rotate(eye_angles.y, finale.xz);
+  finale.yz = rotate(eye_angles.x, finale.yz);
   
-  float dx = getd(z, vert.x+RGL_offset.x-eye_offset.x);
-  float dy = getd(z, vert.y+RGL_offset.y-eye_offset.y);
+  float dx = getd(finale.z, finale.x);
+  float dy = getd(finale.z, finale.y);
 
-  float depth = (z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
+  float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
+  
+  // Fixes an interesting phenomena where vertices in the back glitch into the front of the screen, unsure if it is me, or OpenGL, obviously it's me.
+  if (depth < 0) {
+    depth = -2;
+    dx = dy = 2;
+  }
 
   gl_Position = vec4(normalize_d(dx, eye_d_max), normalize_d(dy, eye_d_max), depth, 1.0);
 

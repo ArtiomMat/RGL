@@ -357,7 +357,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_KEYDOWN:
     case WM_KEYUP:
-    // TODO:
+    int down = (WM_KEYDOWN == uMsg);
+    // TODO
     break;
 
     case WM_LBUTTONDOWN:
@@ -373,7 +374,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
   }
 }
 
-int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
+int RGL_init(UCHAR vsync, int width, int height) {
   hInstance = GetModuleHandleA(NULL);
 
   RGL_width = width;
@@ -422,6 +423,7 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
 
   // Setup the opengl
   hDC = GetDC(hWnd);
+  int bpp = GetDeviceCaps(hDC, BITSPIXEL);
 
   PIXELFORMATDESCRIPTOR pfd = 
   {
@@ -459,24 +461,18 @@ int RGL_init(UCHAR bpp, UCHAR vsync, int width, int height) {
     return 0;
   }
 
-  // Load the vsync thingy and enable if we need to
-  if (!wglSwapIntervalEXT)
-    wglSwapIntervalEXT = (WGLSWAPINTERVAL)wglGetProcAddress("wglSwapIntervalEXT");
-  
-  if (wglSwapIntervalEXT)
-    wglSwapIntervalEXT(vsync?1:0);
-  else
-    puts("RGL: Could not load wglSwapIntervalEXT, so can't VSync.");
-
-  printf("RGL: OpenGL version is '%s'.\n", glGetString(GL_VERSION));
-
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glEnable(GL_DEPTH_TEST);
-
   RGL_loadgl();
 
-  // Setup the projection matrix:
-  // Columns not rows
+  if (rglSwapInterval)
+    rglSwapInterval(vsync?1:0);
+  else
+    puts("RGL: Could not load glSwapInterval, so can't VSync.");
+
+  printf("RGL: Using OpenGL %s.\n", glGetString(GL_VERSION));
+
+  // Some basic OpenGL setup.
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glEnable(GL_DEPTH_TEST);
   
   return 1;
 }
@@ -495,7 +491,7 @@ void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n) {
 
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
   if (!usedeye)
-    puts("RGL: NO USED CAMERA!");
+    puts("RGL: NO USED EYES!");
 
   for (int i = 0; i < n; i++) {
     RGL_MODEL model = bodies[i+_i]->model;
@@ -503,17 +499,12 @@ void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
 
     uniformbody(usedeye->program, bodies[i+_i]);
 
-    glBindTexture(GL_TEXTURE_2D, model->to);
+     glBindTexture(GL_TEXTURE_2D, model->to);
     rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
     rglBindVertexArray(model->vao);
 
     rglDrawElements(GL_TRIANGLES, model->indicesn*3, GL_UNSIGNED_INT, 0);
   }
-
-  // int i = rglGetUniformLocation(usedeye->program, "RGL_eye");
-  // float debug;
-  // rglGetUniformfv(usedeye->program, i, &debug);
-  // printf("%f\n", debug);
 }
 
 void RGL_end() {
