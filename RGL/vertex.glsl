@@ -11,6 +11,8 @@ layout(std140) uniform RGL_eye {
   vec3 eye_angles;
   float eye_p_near;
   float eye_p_far;
+  // TODO: Make it cached as inverse, multiplication by inverse is faster than finding it lol.
+  // So eye_rd_max
   float eye_d_max;
 };
 
@@ -36,10 +38,10 @@ float normalize_d(float d, float d_max) {
   Around x axis: coord(y,z)
   Around z axis: coord(y,x)
 */
+// FIXME: Can see stuff behind us, apparently it is making z positive???
 vec2 rotate(float angle, vec2 coord) {
   float mag = length(coord);
-  if (coord.x != 0)
-    angle = angle + atan(coord.x/coord.y);
+  angle = angle + atan(coord.x/coord.y);
   coord.x = sin(angle) * mag;
   coord.y = cos(angle) * mag;
 
@@ -52,20 +54,18 @@ void main() {
   vec3 finale = vert+RGL_offset-eye_offset;
   // finale.xy = rotate(eye_angles.z, finale.xy);
   finale.xz = rotate(eye_angles.y, finale.xz);
-  finale.yz = rotate(eye_angles.x, finale.yz);
+  // finale.yz = rotate(eye_angles.x, finale.yz);
   
-  float dx = getd(finale.z, finale.x);
-  float dy = getd(finale.z, finale.y);
+  if (finale.z > 0) {
+    float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
+    float dx = getd(finale.z, finale.x);
+    float dy = getd(finale.z, finale.y);
 
-  float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
-  
-  // Fixes an interesting phenomena where vertices in the back glitch into the front of the screen, unsure if it is me, or OpenGL, obviously it's me.
-  if (depth < 0) {
-    depth = -2;
-    dx = dy = 2;
+    gl_Position = vec4(normalize_d(dx, eye_d_max), normalize_d(dy, eye_d_max), depth, 1.0);
   }
-
-  gl_Position = vec4(normalize_d(dx, eye_d_max), normalize_d(dy, eye_d_max), depth, 1.0);
+  else {
+    gl_Position = vec4(0,0,-2,1.0);
+  }
 
   // gl_Position = vec4(vert.x+eye_offset.x, vert.y+eye_offset.y, depth, 1.0);
 }
