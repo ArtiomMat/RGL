@@ -58,10 +58,12 @@ int main() {
 
   int i = 0;
 
+
   TM_initwait();
   while (1) {
     
-  eye->info.offset[2] += 0.11;
+  // eye->info.offset[2] += 0.1;
+  eye->info.angles[0] += 0.01;
   // if (eye->info.angles[1] >= 3.141*2)
   //   eye->info.angles[1] = 0;
     // bodies[0]->offset[2] += 0.2f;

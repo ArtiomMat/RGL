@@ -38,9 +38,11 @@ float normalize_d(float d, float d_max) {
   Around x axis: coord(y,z)
   Around z axis: coord(y,x)
 */
-// FIXME: Can see stuff behind us, apparently it is making z positive???
 vec2 rotate(float angle, vec2 coord) {
-  float mag = length(coord);
+  // sign fixes the issue of z becoming positive.
+  // I believe it has to do with the fact length is positive and the math here has no way of ever knowing if the z is supposed to stay negative or not.
+  // TODO: KEEP IN MIND, THIS BREAKS ROTATION ON THE XY PLANE, MOST LIKELY?
+  float mag = sign(coord.y) * length(coord);
   angle = angle + atan(coord.x/coord.y);
   coord.x = sin(angle) * mag;
   coord.y = cos(angle) * mag;
@@ -54,7 +56,7 @@ void main() {
   vec3 finale = vert+RGL_offset-eye_offset;
   // finale.xy = rotate(eye_angles.z, finale.xy);
   finale.xz = rotate(eye_angles.y, finale.xz);
-  // finale.yz = rotate(eye_angles.x, finale.yz);
+  finale.yz = rotate(eye_angles.x, finale.yz);
   
   if (finale.z > 0) {
     float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
