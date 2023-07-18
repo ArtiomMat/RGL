@@ -62,7 +62,7 @@ int main() {
   TM_initwait();
   while (1) {
     
-    eye->info.offset[2] += 0.1;
+    eye->info.angles[1] += 0.1;
 
     RGL_drawbodies(bodies, 0, 3);
     RGL_refresh();

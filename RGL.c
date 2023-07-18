@@ -31,8 +31,6 @@ static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
 // We then normalize d using RGL_d_max*2
 static float dmaxtable[DMAXTABLESIZE];
 
-static RGL_EYE usedeye = NULL;
-
 static void vecsub(RGL_VEC a, RGL_VEC b, RGL_VEC out) {
   out[0] = a[0] - b[0];
   out[1] = a[1] - b[1];
@@ -231,14 +229,14 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   rglBindBufferBase(GL_UNIFORM_BUFFER, 4, eyeptr->ubo);
 
 
-  if (!usedeye)
-    usedeye = eyeptr;
+  if (!RGL_usedeye)
+    RGL_usedeye = eyeptr;
 
   return eyeptr;
 }
 void RGL_freeeye(RGL_EYE eye) {
-  if (usedeye == eye)
-    usedeye = NULL;
+  if (RGL_usedeye == eye)
+    RGL_usedeye = NULL;
 
   rglDeleteBuffers(1, &eye->ubo);
   free(eye);
@@ -379,7 +377,7 @@ int RGL_init(UCHAR vsync, int width, int height) {
 
   RGL_width = width;
   RGL_height = height;
-  usedeye = NULL;
+  RGL_usedeye = NULL;
 
   // Create the class
   WNDCLASSEX wc = {0};
@@ -479,22 +477,15 @@ int RGL_init(UCHAR vsync, int width, int height) {
   return 1;
 }
 
-
-void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n) {
-  for (int i = 0; i < n; i++) {
-    // drawmodel(models[i+_i]);
-  } 
-}
-
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
-  if (!usedeye)
+  if (!RGL_usedeye)
     puts("RGL: NO USED EYES!");
 
   for (int i = 0; i < n; i++) {
     RGL_MODEL model = bodies[i+_i]->model;
-    useprogram(usedeye);
+    useprogram(RGL_usedeye);
 
-    uniformbody(usedeye->program, bodies[i+_i]);
+    uniformbody(RGL_usedeye->program, bodies[i+_i]);
 
      glBindTexture(GL_TEXTURE_2D, model->to);
     rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);

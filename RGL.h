@@ -89,13 +89,14 @@ EXTERN float RGL_colors[256*4];
 
 EXTERN UINT RGL_mousex, RGL_mousey;
 
+EXTERN RGL_EYE RGL_usedeye;
+
 // General RGL
 // I don't recommend using frame capping if you vsync.
 int RGL_init(UCHAR vsync, int width, int height);
 // Sets the currently used eye for rendering, by default it will be the first eye you create.
 void RGL_useeye(RGL_EYE eye);
-// Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change the used eye in RGL_useeye, but the first eye you create is set automatically.
-void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n);
+// Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change RGL_usedeye, but the first eye you create is set automatically.
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
 // Call after draw calls.
 void RGL_refresh();
