@@ -43,7 +43,7 @@ vec2 rotate(float angle, vec2 coord) {
   // I believe it has to do with the fact length is positive and the math here has no way of ever knowing if the z is supposed to stay negative or not.
   // TODO: KEEP IN MIND, THIS BREAKS ROTATION ON THE XY PLANE, MOST LIKELY?
   float mag = sign(coord.y) * length(coord);
-  angle = angle + atan(coord.x/coord.y);
+  angle = -angle + atan(coord.x/coord.y);
   coord.x = sin(angle) * mag;
   coord.y = cos(angle) * mag;
 

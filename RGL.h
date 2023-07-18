@@ -95,10 +95,10 @@ int RGL_init(UCHAR vsync, int width, int height);
 // Sets the currently used eye for rendering, by default it will be the first eye you create.
 void RGL_useeye(RGL_EYE eye);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change the used eye in RGL_useeye, but the first eye you create is set automatically.
-void RGL_begin(char doclear);
 void RGL_drawmodels(RGL_MODEL* models, UINT _i, UINT n);
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
-void RGL_end();
+// Call after draw calls.
+void RGL_refresh();
 void RGL_free();
 
 // RGL_SHADER

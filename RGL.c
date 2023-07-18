@@ -473,12 +473,10 @@ int RGL_init(UCHAR vsync, int width, int height) {
   // Some basic OpenGL setup.
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glEnable(GL_DEPTH_TEST);
+  // Clear for the start
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
   return 1;
-}
-
-void RGL_begin(char doclear) {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 
@@ -506,7 +504,7 @@ void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
   }
 }
 
-void RGL_end() {
+void RGL_refresh() {
   SwapBuffers(hDC);
 
   static MSG Msg;
@@ -515,6 +513,8 @@ void RGL_end() {
     TranslateMessage(&(Msg));
     DispatchMessageA(&(Msg));
   }
+  
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void RGL_free() {

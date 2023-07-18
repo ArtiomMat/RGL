@@ -2,7 +2,7 @@
 #include "TM.h"
 
 int main() {
-  TM_init(60);
+  TM_init(30);
   RGL_init(0, 400, 400);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
@@ -62,18 +62,10 @@ int main() {
   TM_initwait();
   while (1) {
     
-  // eye->info.offset[2] += 0.1;
-  eye->info.angles[0] += 0.01;
-  // if (eye->info.angles[1] >= 3.141*2)
-  //   eye->info.angles[1] = 0;
-    // bodies[0]->offset[2] += 0.2f;
-    // bodies[2]->offset[2] += 0.1f;
-    // bodies[1]->offset[1] -= 0.2f;
-    // bodies[2]->offset[2] += 0.2f;
+    eye->info.offset[2] += 0.1;
 
-    RGL_begin(1);
-      RGL_drawbodies(bodies, 0, 3);
-    RGL_end();
+    RGL_drawbodies(bodies, 0, 3);
+    RGL_refresh();
 
     TM_wait();
     // puts("OK");
