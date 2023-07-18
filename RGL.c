@@ -193,14 +193,18 @@ void RGL_freeprogram(RGL_PROGRAM program) {
   rglDeleteProgram(program);
 }
 
-static void calcd_max(RGL_EYE eye) {
-  eye->info.d_max = tanf(eye->fov/2) * eye->info.p_near;
+// Ratio factor should be 1 for the d_max on the x axis.
+static float calcr2d_max(RGL_EYE eye) {
+  float ratio = (1.0f*RGL_height)/RGL_width;
+  float r2d_max = 1 / (2 * tanf(eye->fov/2) * eye->info.p_near);
+  eye->info.r2dx_max = ratio * r2d_max;
+  eye->info.r2dy_max = 1 * r2d_max;
 }
 
 // Assumes program is currently in use
 static void useprogram(RGL_EYE eye) {
   // Bind and copy ubo data.
-  calcd_max(eye);
+  calcr2d_max(eye);
   rglUseProgram(eye->program);
   rglBindBuffer(GL_UNIFORM_BUFFER, eye->ubo);
   rglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(eye->info), &eye->info);
@@ -216,7 +220,6 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   eyeptr->fov = fov;
   eyeptr->info.p_far = 500.0f;
   eyeptr->info.p_near = 0.01f;
-  calcd_max(eyeptr);
   
   // Setup the ubo that holds the eye info, which is in eyeptr->info
   rglUseProgram(eyeptr->program);
@@ -227,7 +230,6 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   int i = rglGetUniformBlockIndex(program, "RGL_eye");
   rglUniformBlockBinding(program, i, 4);
   rglBindBufferBase(GL_UNIFORM_BUFFER, 4, eyeptr->ubo);
-
 
   if (!RGL_usedeye)
     RGL_usedeye = eyeptr;

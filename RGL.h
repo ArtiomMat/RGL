@@ -45,7 +45,10 @@ typedef struct {
     // float padding2; // Padding to align subsequent members
     float p_near;
     float p_far;
-    float d_max;
+    // So inverse of 2*d_max, on both y and x.
+    // Since we are ratio aware!
+    float r2dx_max;
+    float r2dy_max;
   } info;
   float fov;
   RGL_PROGRAM program;

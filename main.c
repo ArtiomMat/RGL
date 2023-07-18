@@ -3,7 +3,7 @@
 
 int main() {
   TM_init(30);
-  RGL_init(0, 600, 400);
+  RGL_init(0, 720, 500);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
@@ -17,7 +17,7 @@ int main() {
 
   float vertices[] = {
     // positions          // texture coords
-     0.5f,  0.5f, -0.5f,   1.0f, 1.0f,   // top right
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
      0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
     -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
@@ -51,7 +51,7 @@ int main() {
   eye->info.offset[2] = -5;
 
   RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model2, 0), RGL_initbody(model, 0)};
-  bodies[0]->offset[2] += 15.5f;
+  bodies[0]->offset[2] += 7.5f;
   bodies[1]->offset[0] += 5.0f;
   bodies[2]->offset[1] += 2.0f;
   bodies[2]->offset[2] += 2.0f;
@@ -66,7 +66,7 @@ int main() {
     // eye->info.angles[1] += 0.01;
 
     bodies[1]->angles[1] -= 0.3;
-    bodies[0]->angles[2] -= 0.05;
+    // bodies[0]->angles[2] -= 0.05;
     bodies[1]->angles[2] += 0.2;
     bodies[2]->angles[1] += 0.1;
 
