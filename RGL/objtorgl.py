@@ -52,8 +52,7 @@ for face in f:
     found = 0
     # Find if there exist such indices
     for i in range(len(vertices)):
-      if vertices[i] == v[vertexi]:
-        # print (vertices[i], v[vertexi])
+      if vertices[i] == v[vertexi] and normals[i] == vn[normali] and uvcoords[i] == vt[vertexi]:
         triangles[trianglei].append(i)
         found = 1
         break
@@ -66,20 +65,20 @@ for face in f:
   trianglei+=1
 
 # Open an image
-def get_image_data(image_path):
-    # Open the image using PIL
-    image = Image.open(image_path)
+# def get_image_data(image_path):
+#     # Open the image using PIL
+#     image = Image.open(image_path)
 
-    # Extract width, height, and pixels
-    width, height = image.size
-    pixels = list(image.getdata())
+#     # Extract width, height, and pixels
+#     width, height = image.size
+#     pixels = list(image.getdata())
 
-    # Flatten the pixel array and convert to RGB format
-    rgb_pixels = [pixel[:3] for pixel in pixels]
+#     # Flatten the pixel array and convert to RGB format
+#     rgb_pixels = [pixel[:3] for pixel in pixels]
 
-    return width, height, rgb_pixels
+#     return width, height, rgb_pixels
 
-texturew, textureh, texture = get_image_data(sys.argv[2])
+# texturew, textureh, texture = get_image_data(sys.argv[2])
 
 def ftos(f):
   return "{:.5f}".format(f)

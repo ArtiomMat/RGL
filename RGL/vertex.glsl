@@ -21,6 +21,7 @@ uniform vec3 RGL_offset;
 uniform vec3 RGL_angles;
 
 out vec2 texturecoord;
+out float highlight;
 
 // TODO: Use ratio to avoid stretching!
 // h being either x or y, depending on which d we are getting.
@@ -59,11 +60,21 @@ vec3 rotate(vec3 a, vec3 p) {
 
 void main() {
   texturecoord = i_texturevert; // For the fragment shader
+  gl_Position = vec4(i_texturevert-0.5, 0.5, 1.0);
+  return;
 
   // Rotate around model(self)
   vec3 finale = rotate(RGL_angles, vert);
+  finale += RGL_offset;
+  
+  // Calculate light stuff
+  vec3 normal = rotate(RGL_angles, normal);
+  vec3 RGL_light = vec3(2, 1, 0);
+  vec3 L = normalize(RGL_light - vert);
+  highlight = dot(normal, L);
+
   // Rotate around camera
-  finale += RGL_offset-eye_offset;
+  finale -= eye_offset;
   finale = rotate(-eye_angles, finale);
   
   if (finale.z > 0) {

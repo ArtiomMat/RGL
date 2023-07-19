@@ -277,13 +277,13 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indi
   glGenTextures(1, &modelptr->to);
   glBindTexture(GL_TEXTURE_2D, modelptr->to);
   
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texturew, textureh, 0, GL_RGB, GL_UNSIGNED_BYTE, texturedata);
-  rglGenerateMipmap(GL_TEXTURE_2D);
+  // rglGenerateMipmap(GL_TEXTURE_2D);
 
 
   return modelptr;
@@ -307,8 +307,11 @@ RGL_MODEL RGL_loadmodel(const char* fp) {
 
 
   UINT vn, fn;
-  UINT tw=5, th = 5;
+  UINT tw=100, th = 100;
   UCHAR texture[tw*th*3];
+  for (int i = 0; i < tw*th*3; i++) {
+    texture[i] = rand();
+  }
 
   fscanf(f, "VN %u\n", &vn);
   float v[vn*8];
@@ -324,6 +327,23 @@ RGL_MODEL RGL_loadmodel(const char* fp) {
     );
     printf("OK\n");
     fflush(stdout);
+  }
+  for (int y = 0; y < 60; y++) {
+    for (int x = 0; x < 60; x++) {
+      int found = 0;
+      for (int i = 0; i < vn; i++) {
+        int index = i*8+6;
+        int tx = v[index]*60;
+        int ty = v[index+1]*60;
+        // printf("%d %d\n", tx, ty);
+        if (tx == x && ty == y) {
+          found = 1;
+          break;
+        }
+      }
+      putc(!found?' ':'X', stdout);
+    }
+    putc('\n', stdout);
   }
 
   fscanf(f, "FN %u\n", &fn);

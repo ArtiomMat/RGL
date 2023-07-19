@@ -64,12 +64,12 @@ int main() {
     
     // eye->info.angles[1] += 0.01;
 
-    bodies[1]->angles[1] -= 0.3;
-    // // bodies[0]->angles[2] -= 0.05;
+    // bodies[1]->angles[1] -= 0.3;
+    bodies[0]->angles[1] -= 0.05;
     // bodies[1]->angles[2] += 0.2;
     // bodies[2]->angles[1] += 0.1;
 
-    RGL_drawbodies(bodies, 0, 3);
+    RGL_drawbodies(bodies, 0, 1);
     RGL_refresh();
 
     TM_wait();
