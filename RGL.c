@@ -295,27 +295,53 @@ RGL_MODEL RGL_loadmodel(const char* fp) {
     printf("RGL: Could not load model '%s'.\n", fp);
     return 0;
   }
-  
-  RGL_MODEL modelptr;
 
-  UINT header[4];
+  char line[48];
 
-  // TODO: little and big endian
-  // HEADER
-  fread(header, sizeof (UINT), 4, f);
-  float vbodata[header[0]];
-  UINT ibodata[header[1]];
-  UCHAR texturedata[header[2]*header[3]*3];
+  fread(line, 1, 4, f);
+  if (line[0] != 'R' || line[1] != 'G' || line[2] != '3' || line[3] != '\n') {
+    printf("RGL: '%s' has a bad model format.\n", fp);
+    fclose(f);
+    return 0;
+  }
 
-  // The vbodata is 8 in length since it is XYZ(vertex)XYZ(normal)UV
-  fread(vbodata, header[0] * 8, sizeof (float), f);
-  fread(ibodata, header[1] * 3, sizeof (UINT), f);
-  // RGB
-  fread(texturedata, header[2]*header[3]*3, sizeof (UCHAR), f);
+
+  UINT vn, fn;
+  UINT tw=5, th = 5;
+  UCHAR texture[tw*th*3];
+
+  fscanf(f, "VN %u\n", &vn);
+  float v[vn*8];
+
+  // TODO: This is hacked as fuck, please someone fix it, the fucking format wasn't even supposed to be in ASCII, python just is annoying.
+  for (int i = 0, vi = 0; i < vn; i++, vi+=8) {
+    fscanf(
+      f, 
+      "V %f %f %f\n"
+      "N %f %f %f\n"
+      "T %f %f\n",
+      &v[vi], &v[vi+1], &v[vi+2], &v[vi+3], &v[vi+4], &v[vi+5], &v[vi+6], &v[vi+7]
+    );
+    printf("OK\n");
+    fflush(stdout);
+  }
+
+  fscanf(f, "FN %u\n", &fn);
+  UINT faces[fn*3];
+
+  for (int i = 0, fi = 0; i < fn; i++, fi+=3) {
+    fscanf(
+      f, 
+      "F %u %u %u\n",
+      &faces[fi], &faces[fi+1], &faces[fi+2]
+    );
+  // printf("%d %d\n", i, fn);
+  // fflush(stdout);
+  }
 
   fclose(f);
 
-  modelptr = RGL_initmodel(vbodata, header[0], ibodata, header[1], texturedata, header[2], header[3]);
+  RGL_MODEL modelptr = RGL_initmodel(v, vn, faces, fn, texture, tw, th);
 
   return modelptr;
 }

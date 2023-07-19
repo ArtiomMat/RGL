@@ -1,4 +1,6 @@
 import sys
+from PIL import Image
+import struct
 
 args = sys.argv
 argsn = len(sys.argv)
@@ -33,12 +35,9 @@ for line in lines:
       x.append([int(y[0]), int(y[1]), int(y[2])])
     f.append(x)
 
-texturew = 0 # Width
-textureh = 0 # Height
-texture = [] # The list that contains RGB triplet lists of pixels, classic flattened rows, left to right.
 vertices = [] # Vertex list that contains XYZ triplet lists.
 uvcoords = [] # UV coordinates
-normals = []
+normals = [] # Same as vertex, but normals, ofc
 triangles = [] # Contains 3 indices for the triangles
 
 # Now to make it a normal fucking format omg
@@ -65,3 +64,42 @@ for face in f:
       triangles[trianglei].append(len(vertices) - 1)
 
   trianglei+=1
+
+# Open an image
+def get_image_data(image_path):
+    # Open the image using PIL
+    image = Image.open(image_path)
+
+    # Extract width, height, and pixels
+    width, height = image.size
+    pixels = list(image.getdata())
+
+    # Flatten the pixel array and convert to RGB format
+    rgb_pixels = [pixel[:3] for pixel in pixels]
+
+    return width, height, rgb_pixels
+
+texturew, textureh, texture = get_image_data(sys.argv[2])
+
+def ftos(f):
+  return "{:.5f}".format(f)
+
+f = open(sys.argv[1].split(".")[0]+".rg3", "w");
+
+f.write("RG3\n")
+f.write(f"VN {len(vertices)}\n")
+for i in range(len(vertices)):
+  f.write("V "+ftos(vertices[i][0])+" ")
+  f.write(ftos(vertices[i][1])+" ")
+  f.write(ftos(vertices[i][2])+"\nN ")
+  f.write(ftos(normals[i][0])+" ")
+  f.write(ftos(normals[i][1])+" ")
+  f.write(ftos(normals[i][2])+"\nT ")
+  f.write(ftos(uvcoords[i][0])+" ")
+  f.write(ftos(uvcoords[i][1])+"\n")
+
+f.write(f"FN {len(triangles)}\n")
+for i in range(len(triangles)):
+  f.write("F "+str(triangles[i][0])+" ")
+  f.write(str(triangles[i][1])+" ")
+  f.write(str(triangles[i][2])+"\n")
