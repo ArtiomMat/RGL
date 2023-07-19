@@ -255,12 +255,17 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indi
   rglGenBuffers(1, &modelptr->vbo);
   rglBindBuffer(GL_ARRAY_BUFFER, modelptr->vbo);
   // Copy to OpenGL
-  rglBufferData(GL_ARRAY_BUFFER, verticesn * sizeof (GL_FLOAT) * 5, vbodata, GL_STATIC_DRAW);
-  // Cofigure attributes for the vertices of the model + the vertices of the texture
-  rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), 0);
+  rglBufferData(GL_ARRAY_BUFFER, verticesn * sizeof (float) * 8, vbodata, GL_STATIC_DRAW);
+  
+  // Vertices
+  rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
   rglEnableVertexAttribArray(0);
-  rglVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (void*)(3 * sizeof(GL_FLOAT)));
+  // Vertex normals
+  rglVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
   rglEnableVertexAttribArray(1);
+  // UV Vertices
+  rglVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  rglEnableVertexAttribArray(2);
 
   // ibo
   rglGenBuffers(1, &modelptr->ibo);
@@ -300,11 +305,13 @@ RGL_MODEL RGL_loadmodel(const char* fp) {
   fread(header, sizeof (UINT), 4, f);
   float vbodata[header[0]];
   UINT ibodata[header[1]];
-  UCHAR texturedata[header[2]*header[3]];
+  UCHAR texturedata[header[2]*header[3]*3];
 
-  fread(vbodata, header[0] * 5, sizeof (float), f);
+  // The vbodata is 8 in length since it is XYZ(vertex)XYZ(normal)UV
+  fread(vbodata, header[0] * 8, sizeof (float), f);
   fread(ibodata, header[1] * 3, sizeof (UINT), f);
-  fread(texturedata, header[2]*header[3], sizeof (UCHAR), f);
+  // RGB
+  fread(texturedata, header[2]*header[3]*3, sizeof (UCHAR), f);
 
   fclose(f);
 
@@ -477,6 +484,10 @@ int RGL_init(UCHAR vsync, int width, int height) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
   return 1;
+}
+
+void RGL_settitle(const char* title) {
+  SetWindowTextA(hWnd, title);
 }
 
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {

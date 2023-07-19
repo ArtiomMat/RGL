@@ -4,7 +4,8 @@
 #version 430 core
 
 layout (location = 0) in vec3 vert;
-layout (location = 1) in vec2 i_texturevert;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec2 i_texturevert;
 
 layout(std140) uniform RGL_eye {
   vec3 eye_offset;

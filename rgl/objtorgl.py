@@ -33,8 +33,11 @@ for line in lines:
       x.append([int(y[0]), int(y[1]), int(y[2])])
     f.append(x)
 
-vertices = []
-uvcoords = []
+texturew = 0 # Width
+textureh = 0 # Height
+texture = [] # The list that contains RGB triplet lists of pixels, classic flattened rows, left to right.
+vertices = [] # Vertex list that contains XYZ triplet lists.
+uvcoords = [] # UV coordinates
 normals = []
 triangles = [] # Contains 3 indices for the triangles
 
@@ -62,9 +65,3 @@ for face in f:
       triangles[trianglei].append(len(vertices) - 1)
 
   trianglei+=1
-
-print(len(vertices))
-print(len(uvcoords))
-print(len(normals))
-print(vertices)
-print(triangles)

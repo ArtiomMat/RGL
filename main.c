@@ -3,7 +3,8 @@
 
 int main() {
   TM_init(30);
-  RGL_init(0, 720, 500);
+  RGL_init(0, 500, 500);
+  RGL_settitle("Momento Mori");
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
@@ -17,10 +18,10 @@ int main() {
 
   float vertices[] = {
     // positions          // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-     0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-    -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+     0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+     0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+    -0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+    -0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
   };
   UINT indices[] = {  // note that we start from 0!
     0, 1, 3,   // first triangle
@@ -63,7 +64,7 @@ int main() {
   TM_initwait();
   while (1) {
     
-    // eye->info.angles[1] += 0.01;
+    eye->info.angles[1] += 0.01;
 
     bodies[1]->angles[1] -= 0.3;
     // bodies[0]->angles[2] -= 0.05;

@@ -97,6 +97,7 @@ EXTERN RGL_EYE RGL_usedeye;
 // General RGL
 // I don't recommend using frame capping if you vsync.
 int RGL_init(UCHAR vsync, int width, int height);
+void RGL_settitle(const char* title);
 // Sets the currently used eye for rendering, by default it will be the first eye you create.
 void RGL_useeye(RGL_EYE eye);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change RGL_usedeye, but the first eye you create is set automatically.
