@@ -60,8 +60,8 @@ vec3 rotate(vec3 a, vec3 p) {
 
 void main() {
   texturecoord = i_texturevert; // For the fragment shader
-  gl_Position = vec4(i_texturevert-0.5, 0.5, 1.0);
-  return;
+  // gl_Position = vec4(i_texturevert-0.5, 0.5, 1.0);
+  // return;
 
   // Rotate around model(self)
   vec3 finale = rotate(RGL_angles, vert);

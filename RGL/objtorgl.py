@@ -1,3 +1,7 @@
+"""
+  So the g
+"""
+
 import sys
 from PIL import Image
 import struct
@@ -16,9 +20,11 @@ vn = []
 f = []
 
 for line in lines:
+  # Convert to stuff we can read
   line = line.decode("utf-8")
   args = line.split(" ");
   
+  # Simply parsing the obj file nothing serious going on
   if args[0] == "v":
     x =[float(args[1]), float(args[2]), float(args[3])]
     v.append(x)
@@ -30,6 +36,7 @@ for line in lines:
     vn.append(x)
   elif args[0] == "f":
     x = []
+    # Since each element in f is comprised of 3 other elements: v/vt/vn, we need a nested loop
     for i in range(3):
       y = args[i+1].split("/")
       x.append([int(y[0]), int(y[1]), int(y[2])])
@@ -44,11 +51,14 @@ triangles = [] # Contains 3 indices for the triangles
 trianglei = 0;
 for face in f:
   triangles.append([]) # Create a list, that will become a triad of indices
+  # Now we loop through the triad of elements in the current face
   for element in face:
+    # Get indices the obj face is pointing to(v/vt/vn)
     vertexi = element[0]-1
     uvcoordi = element[1]-1
     normali = element[2]-1
 
+    # To avoid duplication, we find if we already have a triad of v/vt/vn in the current huge list we created of v/vt/vn, if we do find we just set the triangle's face to that index we found(instead of just registering another triad(v/vt/vn)), if we don't find, we register it and just point to that triad in the current face's element.
     found = 0
     # Find if there exist such indices
     for i in range(len(vertices)):
@@ -84,6 +94,8 @@ def ftos(f):
   return "{:.5f}".format(f)
 
 f = open(sys.argv[1].split(".")[0]+".rg3", "w");
+
+# A really hacky way to just write the RG3 file, don't worry about it too much, it works, it's all that matters!
 
 f.write("RG3\n")
 f.write(f"VN {len(vertices)}\n")
