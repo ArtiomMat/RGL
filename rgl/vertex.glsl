@@ -73,6 +73,6 @@ void main() {
     gl_Position = vec4(normalize_d(dx, eye_r2dx_max), normalize_d(dy, eye_r2dy_max), depth, 1.0);
   }
   else {
-    gl_Position = vec4(2,2,-2,1.0);
+    gl_Position = vec4(0,0,-500,1.0);
   }
 }
