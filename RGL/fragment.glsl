@@ -10,5 +10,5 @@ uniform sampler2D RGL_texture;
 void main() {
     color = texture(RGL_texture, texturecoord);
     // color = vec4(1,1,1,1);
-    // color *= highlight;
+    color *= highlight;
 }

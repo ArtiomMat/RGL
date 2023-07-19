@@ -325,25 +325,7 @@ RGL_MODEL RGL_loadmodel(const char* fp) {
       "T %f %f\n",
       &v[vi], &v[vi+1], &v[vi+2], &v[vi+3], &v[vi+4], &v[vi+5], &v[vi+6], &v[vi+7]
     );
-    printf("OK\n");
     fflush(stdout);
-  }
-  for (int y = 0; y < 60; y++) {
-    for (int x = 0; x < 60; x++) {
-      int found = 0;
-      for (int i = 0; i < vn; i++) {
-        int index = i*8+6;
-        int tx = v[index]*60;
-        int ty = v[index+1]*60;
-        // printf("%d %d\n", tx, ty);
-        if (tx == x && ty == y) {
-          found = 1;
-          break;
-        }
-      }
-      putc(!found?' ':'X', stdout);
-    }
-    putc('\n', stdout);
   }
 
   fscanf(f, "FN %u\n", &fn);

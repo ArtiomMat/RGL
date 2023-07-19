@@ -68,9 +68,10 @@ void main() {
   finale += RGL_offset;
   
   // Calculate light stuff
-  vec3 normal = rotate(RGL_angles, normal);
-  vec3 RGL_light = vec3(2, 1, 0);
-  vec3 L = normalize(RGL_light - vert);
+  vec3 RGL_light = vec3(3, -7, -3);
+  RGL_light -= RGL_offset;
+  RGL_light = rotate(-RGL_angles, RGL_light);
+  vec3 L = normalize(RGL_light-vert);
   highlight = dot(normal, L);
 
   // Rotate around camera
