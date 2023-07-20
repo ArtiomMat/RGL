@@ -251,7 +251,6 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->colorsubo);
   rglBufferData(GL_UNIFORM_BUFFER, sizeof(RGL_colors), RGL_colors, GL_STATIC_DRAW);
   i = rglGetUniformBlockIndex(program, "RGL_palette");
-  printf("%d\n", i);
   rglUniformBlockBinding(program, i, 1);
   rglBindBufferBase(GL_UNIFORM_BUFFER, 1, eyeptr->colorsubo);
 
@@ -313,57 +312,39 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indi
   return modelptr;
 }
 
-RGL_MODEL RGL_loadmodel(const char* fp) {
+RGL_MODEL RGL_loadmodel(const char* fp, const char* texturefp) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
     printf("RGL: Could not load model '%s'.\n", fp);
     return 0;
   }
 
-  char line[48];
+  UINT vn, fn;
 
-  fread(line, 1, 4, f);
-  if (line[0] != 'R' || line[1] != 'G' || line[2] != '3' || line[3] != '\n') {
-    printf("RGL: '%s' has a bad model format.\n", fp);
-    fclose(f);
+  fread(&vn, sizeof(vn), 1, f);
+  fread(&fn, sizeof(fn), 1, f);
+  float v[vn*8];
+  UINT faces[fn*3];
+  
+  fread(v, sizeof(float), vn*8, f);
+  fread(faces, sizeof(UINT), fn*3, f);
+
+  fclose(f);
+
+  // Texture
+  f = fopen(texturefp, "rb");
+  if (!f) {
+    printf("RGL: Could not load texture '%s'.\n", fp);
     return 0;
   }
 
+  UINT tw, th;
+  fread(&tw, sizeof(tw), 1, f);
+  fread(&th, sizeof(th), 1, f);
 
-  UINT vn, fn;
-  UINT tw=100, th = 100;
   UCHAR texture[tw*th*3];
-  for (int i = 0; i < tw*th*3; i++) {
-    texture[i] = rand();
-  }
 
-  fscanf(f, "VN %u\n", &vn);
-  float v[vn*8];
-
-  // TODO: This is hacked as fuck, please someone fix it, the fucking format wasn't even supposed to be in ASCII, python just is annoying.
-  for (int i = 0, vi = 0; i < vn; i++, vi+=8) {
-    fscanf(
-      f, 
-      "V %f %f %f\n"
-      "N %f %f %f\n"
-      "T %f %f\n",
-      &v[vi], &v[vi+1], &v[vi+2], &v[vi+3], &v[vi+4], &v[vi+5], &v[vi+6], &v[vi+7]
-    );
-    fflush(stdout);
-  }
-
-  fscanf(f, "FN %u\n", &fn);
-  UINT faces[fn*3];
-
-  for (int i = 0, fi = 0; i < fn; i++, fi+=3) {
-    fscanf(
-      f, 
-      "F %u %u %u\n",
-      &faces[fi], &faces[fi+1], &faces[fi+2]
-    );
-  // printf("%d %d\n", i, fn);
-  // fflush(stdout);
-  }
+  fread(texture, tw*th, 3, f);
 
   fclose(f);
 

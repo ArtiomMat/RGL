@@ -136,7 +136,7 @@ void RGL_freeeye(RGL_EYE eye);
 // texturew/h is pretty self explanitory.
 RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
 // You can set program to 0 for the default retro program.
-RGL_MODEL RGL_loadmodel(const char* fp);
+RGL_MODEL RGL_loadmodel(const char* fp,  const char* texturefp);
 void RGL_freemodel(RGL_MODEL model);
 // RGL_BODY
 RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags);

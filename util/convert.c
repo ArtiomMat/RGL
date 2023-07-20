@@ -248,11 +248,10 @@ void pngtorgt(const char* fp, RGT* rgt) {
   // Convert pixel data to RGB format and store it in RGT structure
   for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
-          png_bytep row = row_pointers[y];
-          png_bytep px = &(row[x * 3]);
-          rgt->pixels[y * width + x][0] = px[0];
-          rgt->pixels[y * width + x][1] = px[1];
-          rgt->pixels[y * width + x][2] = px[2];
+        char* rgba = &row_pointers[y][x*4];
+        rgt->pixels[y * width + x][0] = rgba[0];
+        rgt->pixels[y * width + x][1] = rgba[1];
+        rgt->pixels[y * width + x][2] = rgba[2];
       }
   }
 
@@ -272,7 +271,7 @@ void savergt(RGT* rgt, const char* fp) {
   fwrite(&rgt->w, sizeof(int), 1, f);
   fwrite(&rgt->h, sizeof(int), 1, f);
   
-  fwrite(rgt->pixels, sizeof(char), rgt->w*rgt->h, f);
+  fwrite(rgt->pixels, sizeof(char)*3, rgt->w*rgt->h, f);
 
   fclose(f);
 }
@@ -294,10 +293,6 @@ int main(int argsn, const char** args) {
     puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
     return 1;
   }
-
-    puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
-  malloc(7680);
-    puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
 
   char type = args[1][0];
   const char* input = args[2];

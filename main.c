@@ -47,7 +47,7 @@ int main() {
   };
 
   RGL_MODEL model = RGL_initmodel(vertices, 4, indices, 2, texturedata, 4, 4);
-  RGL_MODEL model2 = RGL_loadmodel("test.rg3");
+  RGL_MODEL model2 = RGL_loadmodel("mori.rgm", "mori.rgt");
 
   RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model2, 0), RGL_initbody(model2, 0)};
   bodies[0]->offset[2] += 7.5f;
