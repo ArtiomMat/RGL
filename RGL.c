@@ -194,17 +194,17 @@ void RGL_freeprogram(RGL_PROGRAM program) {
 }
 
 // Ratio factor should be 1 for the d_max on the x axis.
-static float calcr2d_max(RGL_EYE eye) {
+static float calcrd_max(RGL_EYE eye) {
   float ratio = (1.0f*RGL_height)/RGL_width;
-  float r2d_max = 1 / (2 * tanf(eye->fov/2) * eye->info.p_near);
-  eye->info.r2dx_max = ratio * r2d_max;
-  eye->info.r2dy_max = 1 * r2d_max;
+  float rd_max = 1 / (tanf(eye->fov/2) * eye->info.p_near);
+  eye->info.rdx_max = ratio * rd_max;
+  eye->info.rdy_max = 1 * rd_max;
 }
 
 // Assumes program is currently in use
 static void useprogram(RGL_EYE eye) {
   // Bind and copy ubo data.
-  calcr2d_max(eye);
+  calcrd_max(eye);
   rglUseProgram(eye->program);
   rglBindBuffer(GL_UNIFORM_BUFFER, eye->ubo);
   rglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(eye->info), &eye->info);
@@ -219,7 +219,7 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   zerovec(eyeptr->info.angles);
   eyeptr->fov = fov;
   eyeptr->info.p_far = 500.0f;
-  eyeptr->info.p_near = 0.01f;
+  eyeptr->info.p_near = 0.0001f;
   
   // Setup the ubo that holds the eye info, which is in eyeptr->info
   rglUseProgram(eyeptr->program);
@@ -393,7 +393,27 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_KEYDOWN:
     case WM_KEYUP:
     int down = (WM_KEYDOWN == uMsg);
-    // TODO
+    float speed = 0.1f;
+    if (down) {
+      if (wParam == 'W') {
+        RGL_usedeye->info.offset[2] += speed;
+      }
+      else if (wParam == 'S') {
+        RGL_usedeye->info.offset[2] -= speed;
+      }
+      else if (wParam == 'A') {
+        RGL_usedeye->info.offset[0] -= speed;
+      }
+      else if (wParam == 'D') {
+        RGL_usedeye->info.offset[0] += speed;
+      }
+      else if (wParam == 'Q') {
+        RGL_usedeye->info.angles[1] += speed;
+      }
+      else if (wParam == 'E') {
+        RGL_usedeye->info.angles[1] -= speed;
+      }
+    }
     break;
 
     case WM_LBUTTONDOWN:

@@ -3,7 +3,7 @@
 
 int main() {
   TM_init(30);
-  RGL_init(0, 500, 500);
+  RGL_init(0, 640, 400);
   RGL_settitle("Momento Mori");
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
@@ -14,7 +14,7 @@ int main() {
 
   // RGL_PROGRAM prog = RGL_loadprogram("RGL/program.glpb");
 
-  RGL_EYE eye = RGL_initeye(prog, 1.2);
+  RGL_EYE eye = RGL_initeye(prog, 1.3);
 
   float vertices[] = {
     // positions          // texture coords

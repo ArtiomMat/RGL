@@ -47,8 +47,8 @@ typedef struct {
     float p_far;
     // So inverse of 2*d_max, on both y and x.
     // Since we are ratio aware!
-    float r2dx_max;
-    float r2dy_max;
+    float rdx_max;
+    float rdy_max;
   } info;
   float fov;
   RGL_PROGRAM program;

@@ -13,8 +13,8 @@ layout(std140) uniform RGL_eye {
   float eye_p_near;
   float eye_p_far;
   // r is for inverse, so it's 1/2*dx/y_max^.
-  float eye_r2dx_max;
-  float eye_r2dy_max;
+  float eye_rdx_max;
+  float eye_rdy_max;
 };
 
 uniform vec3 RGL_offset;
@@ -30,8 +30,8 @@ float getd(float z, float h) {
 }
 
 // There are two d_max so it's a parameter
-float normalize_d(float d, float r2d_max) {
-  return d*r2d_max;
+float normalize_d(float d, float rd_max) {
+  return d*rd_max;
 }
 
 // This is euler transforms.
@@ -78,14 +78,11 @@ void main() {
   finale -= eye_offset;
   finale = rotate(-eye_angles, finale);
   
-  if (finale.z > 0) {
-    float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
-    float dx = getd(finale.z, finale.x);
-    float dy = getd(finale.z, finale.y);
-
-    gl_Position = vec4(normalize_d(dx, eye_r2dx_max), normalize_d(dy, eye_r2dy_max), depth, 1.0);
-  }
-  else {
-    gl_Position = vec4(0,0,-500,1.0);
-  }
+  float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
+  float dx = getd(finale.z, finale.x);
+  float dy = getd(finale.z, finale.y);
+  if (depth > 0)
+    gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), depth, 1.0);
+  else
+    gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), -500, 1.0);
 }
