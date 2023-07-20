@@ -23,15 +23,19 @@ uniform vec3 RGL_angles;
 out vec2 texturecoord;
 out float highlight;
 
-// TODO: Use ratio to avoid stretching!
 // h being either x or y, depending on which d we are getting.
 float getd(float z, float h) {
-  return h*eye_p_near/(z);
+  // So there is a very weird bug where vertices go crazy once they go outside of the view. Apparently, it has to do with points that are below the near plane on the z axis, and adding the following check and branching results, fixed it, from current observations.
+  // My theory: We use a method where a triangle is inside another triangle and since they are below the z, this d/x=n/z formula breaks, as it does not account for the z being below the near plane. This results in the formula "thinking" that the triangle is in the view, since the x is within the vision plane, but it really is not. so thorwing d to like 100*x, will result in d/rd_max giving a result where the point is surely outside the view, we also make sure to include x, because of it's sign.
+  // FIXME: a problem where one a vertex is thrown far away and it causes stretching of triangles. Perhaps create a formula for when the vertex is behind the vision plane.
+  if (z > eye_p_near)
+    return (h*eye_p_near)/z;
+  return h * 100;
 }
 
 // There are two d_max so it's a parameter
 float normalize_d(float d, float rd_max) {
-  return d*rd_max;
+  return d*(rd_max);
 }
 
 // This is euler transforms.
@@ -81,8 +85,5 @@ void main() {
   float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
   float dx = getd(finale.z, finale.x);
   float dy = getd(finale.z, finale.y);
-  if (depth > 0)
-    gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), depth, 1.0);
-  else
-    gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), -500, 1.0);
+  gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), depth, 1.0);
 }

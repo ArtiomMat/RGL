@@ -53,6 +53,7 @@ typedef struct {
   float fov;
   RGL_PROGRAM program;
   UINT ubo; // What contains shader information about the camera
+  UINT colorsubo; // What contains shader information about the camera
 } RGL_EYEDATA, *RGL_EYE;
 
 // A model can be played around with via CPU, since it's stored in RAM, and you don't have to update it, unlike an RGL_BODY.

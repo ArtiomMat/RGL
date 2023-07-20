@@ -7,19 +7,20 @@ in float highlight;
 
 uniform sampler2D RGL_texture;
 
-layout(std140) uniform RGL_eye {
+layout(std140) uniform RGL_palette {
   vec4 RGL_colors[256];
 };
 
+// TODO: The problem, is that I think it's better to do it in post processing rather that with every object, perhaps it will even be faster?
 void main() {
-  color = texture(RGL_texture, texturecoord);
-  color *= vec4(highlight, highlight/3, highlight/3, 1);
+  color = vec4(highlight, highlight, highlight, 1);
+  color *= texture(RGL_texture, texturecoord);
   
   int besti = 0;
   float dst = 100.0;
   
-  for (int i = 0; i < 256; i++) {
-    vec4 curdst = distance(RGL_colors[i], color);
+  for (int i = 0; i < 128; i++) {
+    float curdst = distance(RGL_colors[i], color);
     if (curdst < dst) {
       besti = i;
       dst = curdst;
