@@ -100,8 +100,7 @@ EXTERN RGL_EYE RGL_usedeye;
 int RGL_init(UCHAR vsync, int width, int height);
 void RGL_settitle(const char* title);
 int RGL_loadcolors(const char* fp);
-// Sets the currently used eye for rendering, by default it will be the first eye you create.
-void RGL_useeye(RGL_EYE eye);
+void RGL_setcursor(char shown, char captured);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change RGL_usedeye, but the first eye you create is set automatically.
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
 // Call after draw calls.
