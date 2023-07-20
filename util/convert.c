@@ -1,4 +1,4 @@
-// This program converts png files to RG2 files and obj files to RG3.
+// This program converts png files to RGT files and obj files to RGM.
 
 #include <stdlib.h>
 #include <string.h>
@@ -28,18 +28,20 @@ typedef struct {
   VEC3 o; // Offset
   VEC3 n; // Normal
   VEC2 t; // Texture coordinate
-} RG3_VERTEX;
+} RGM_VERTEX;
 
 typedef struct {
-  RG3_VERTEX* v;
+  RGM_VERTEX* v;
   INT3* f;
   int v_n, f_n;
-} RG3;
+} RGM;
+
+typedef char RGB[3];
 
 typedef struct {
   int w, h;
-  char* pixels;
-} RG2;
+  RGB* pixels;
+} RGT;
 
 // Returns line length, not including \n in this case \0
 // Replaces \n with \0
@@ -74,7 +76,7 @@ void loadobj(const char* fp, OBJ* obj) {
         obj->v_n++;
       else if (line[1] == 't')
         obj->vt_n++;
-      else if (line[2] == 'n')
+      else if (line[1] == 'n')
         obj->vn_n++;
     }
     else if (line[0] == 'f') {
@@ -129,60 +131,193 @@ void loadobj(const char* fp, OBJ* obj) {
 }
 
 // ei is the elemnt index, from 0 to 2
-// fi is the face index for both the rg3 and obj
-// vi is the vertex index for rg3, essentially the index where the normals vertex offsets, etc is copied from the obj
-void vtov(OBJ* obj, RG3* rg3, int ei, int vi, int fi) {
-    rg3->f[fi][ei] = vi; // Set the index of the face's elemnt in rg3
+// fi is the face index for both the rgm and obj
+// vi is the vertex index for rgm, essentially the index where the normals vertex offsets, etc is copied from the obj
+void vtov(OBJ* obj, RGM* rgm, int ei, int vi, int fi) {
+    rgm->f[fi][ei] = vi; // Set the index of the face's elemnt in rgm
     float x = obj->v[obj->f[0][0].v-1][0];
     // Copy the attributes to their respective vi
-    memcpy(rg3->v[vi].o, obj->v[obj->f[fi][ei].v-1], sizeof(VEC3));
+    memcpy(rgm->v[vi].o, obj->v[obj->f[fi][ei].v-1], sizeof(VEC3));
     // printf("%f\n", obj->v[obj->f[fi][ei].v-1][0]);
-    memcpy(rg3->v[vi].n, obj->vn[obj->f[fi][ei].vn-1], sizeof(VEC3));
-    memcpy(rg3->v[vi].t, obj->vt[obj->f[fi][ei].vt-1], sizeof(VEC2));
+    memcpy(rgm->v[vi].n, obj->vn[obj->f[fi][ei].vn-1], sizeof(VEC3));
+    memcpy(rgm->v[vi].t, obj->vt[obj->f[fi][ei].vt-1], sizeof(VEC2));
 }
 
-void printv(RG3* rg3, int vi) {
+void printv(RGM* rgm, int vi) {
   printf("o=%f %f %f; n=%f %f %f; t=%f %f\n", 
-  rg3->v[vi].o[0], rg3->v[vi].o[1], rg3->v[vi].o[2],
-  rg3->v[vi].n[0], rg3->v[vi].n[1], rg3->v[vi].n[2],
-  rg3->v[vi].t[0], rg3->v[vi].t[1]);
+  rgm->v[vi].o[0], rgm->v[vi].o[1], rgm->v[vi].o[2],
+  rgm->v[vi].n[0], rgm->v[vi].n[1], rgm->v[vi].n[2],
+  rgm->v[vi].t[0], rgm->v[vi].t[1]);
 }
 
-void objtorg3(OBJ* obj, RG3* rg3) {
+void objtorgm(OBJ* obj, RGM* rgm) {
   // At first we assume there are no duplicates in the face elements, and assume every single element has a unique v/vt/vn. duplicate removal will come later.
-  rg3->v_n = obj->f_n * 3;
-  rg3->v = malloc(sizeof(*rg3->v) * rg3->v_n);
+  rgm->v_n = obj->f_n * 3;
+  printf("%d\n", sizeof(*rgm->v) * rgm->v_n);
+  fflush(stdout);
+  rgm->v = malloc(sizeof(*rgm->v) * rgm->v_n);
 
-  rg3->f_n = obj->f_n;
-  rg3->f = malloc(sizeof(*rg3->f) * obj->f_n);
+  rgm->f_n = obj->f_n;
+  rgm->f = malloc(sizeof(*rgm->f) * obj->f_n);
 
   int vi = 0;
   for (int fi = 0; fi < obj->f_n; fi++) {
-    vtov(obj, rg3, 0, vi++, fi);
-    printv(rg3, vi-1);
-    vtov(obj, rg3, 1, vi++, fi);
-    printv(rg3, vi-1);
-    vtov(obj, rg3, 2, vi++, fi);
-    printv(rg3, vi-1);
+    vtov(obj, rgm, 0, vi++, fi);
+    printv(rgm, vi-1);
+    vtov(obj, rgm, 1, vi++, fi);
+    printv(rgm, vi-1);
+    vtov(obj, rgm, 2, vi++, fi);
+    printv(rgm, vi-1);
   }
 }
 
-void saverg3(RG3* rg3, const char* fp) {
+void pngtorgt(const char* fp, RGT* rgt) {
+  FILE *file = fopen(fp, "rb");
+  if (!file) {
+      fprintf(stderr, "Error opening PNG file %s\n", fp);
+      return;
+  }
+
+  // Create PNG read struct and info struct
+  png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (!png_ptr) {
+      fclose(file);
+      fprintf(stderr, "Error creating PNG read struct\n");
+      return;
+  }
+
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+      png_destroy_read_struct(&png_ptr, NULL, NULL);
+      fclose(file);
+      fprintf(stderr, "Error creating PNG info struct\n");
+      return;
+  }
+
+  // Set up error handling
+  if (setjmp(png_jmpbuf(png_ptr))) {
+      png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+      fclose(file);
+      fprintf(stderr, "Error during PNG read\n");
+      return;
+  }
+
+  // Initialize PNG IO
+  png_init_io(png_ptr, file);
+
+  // Read header information
+  png_read_info(png_ptr, info_ptr);
+
+  int width = png_get_image_width(png_ptr, info_ptr);
+  int height = png_get_image_height(png_ptr, info_ptr);
+  png_byte color_type = png_get_color_type(png_ptr, info_ptr);
+  png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+
+  // Ensure RGB format
+  if (color_type != PNG_COLOR_TYPE_RGB && color_type != PNG_COLOR_TYPE_RGBA) {
+      fprintf(stderr, "Input PNG must be in RGB format\n");
+      png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+      fclose(file);
+      return;
+  }
+
+  // Set transformations if needed
+  if (color_type == PNG_COLOR_TYPE_PALETTE) {
+      png_set_palette_to_rgb(png_ptr);
+  }
+  if (bit_depth == 16) {
+      png_set_strip_16(png_ptr);
+  }
+  if (color_type == PNG_COLOR_TYPE_GRAY ||
+      color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+      png_set_gray_to_rgb(png_ptr);
+  }
+
+  // Allocate memory for the pixels
+  rgt->w = width;
+  rgt->h = height;
+  rgt->pixels = (RGB *)malloc(width * height * sizeof(RGB));
+
+  // Read image data
+  png_bytep *row_pointers = (png_bytep *)malloc(height * sizeof(png_bytep));
+  for (int y = 0; y < height; y++) {
+      row_pointers[y] = (png_byte *)malloc(png_get_rowbytes(png_ptr, info_ptr));
+  }
+  png_read_image(png_ptr, row_pointers);
+
+  // Convert pixel data to RGB format and store it in RGT structure
+  for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+          png_bytep row = row_pointers[y];
+          png_bytep px = &(row[x * 3]);
+          rgt->pixels[y * width + x][0] = px[0];
+          rgt->pixels[y * width + x][1] = px[1];
+          rgt->pixels[y * width + x][2] = px[2];
+      }
+  }
+
+  // Clean up and release resources
+  for (int y = 0; y < height; y++) {
+      free(row_pointers[y]);
+  }
+  free(row_pointers);
+
+  png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+  fclose(file);
+}
+
+void savergt(RGT* rgt, const char* fp) {
   FILE* f = fopen(fp, "wb");
 
-  fwrite(&rg3->v_n, sizeof(rg3->v_n), 1, f);
-  fwrite(&rg3->f_n, sizeof(rg3->f_n), 1, f);
+  fwrite(&rgt->w, sizeof(int), 1, f);
+  fwrite(&rgt->h, sizeof(int), 1, f);
   
-  fwrite(rg3->v, sizeof(RG3_VERTEX), rg3->v_n, f);
-  fwrite(rg3->f, sizeof(INT3), rg3->f_n, f);
+  fwrite(rgt->pixels, sizeof(char), rgt->w*rgt->h, f);
 
   fclose(f);
 }
 
-int main(int argsn, char** args) {
-  OBJ obj;
-  RG3 rg3;
-  ftoobj(args[1], &obj);
-  objtorg3(&obj, &rg3);
+void savergm(RGM* rgm, const char* fp) {
+  FILE* f = fopen(fp, "wb");
+
+  fwrite(&rgm->v_n, sizeof(rgm->v_n), 1, f);
+  fwrite(&rgm->f_n, sizeof(rgm->f_n), 1, f);
+  
+  fwrite(rgm->v, sizeof(RGM_VERTEX), rgm->v_n, f);
+  fwrite(rgm->f, sizeof(INT3), rgm->f_n, f);
+
+  fclose(f);
+}
+
+int main(int argsn, const char** args) {
+  if (argsn < 4) {
+    puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
+    return 1;
+  }
+
+    puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
+  malloc(7680);
+    puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
+
+  char type = args[1][0];
+  const char* input = args[2];
+  const char* output = args[3];
+
+  switch(type) {
+    case 't':
+    RGT rgt;
+    pngtorgt(input, &rgt);
+    savergt(&rgt, output);
+    break;
+
+    case 'm':
+    OBJ obj;
+    RGM rgm;
+    loadobj(input, &obj);
+    objtorgm(&obj, &rgm);
+    savergm(&rgm, output);
+    break;
+  }
+
   return 0;
 }
