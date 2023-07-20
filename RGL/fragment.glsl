@@ -13,10 +13,10 @@ layout(std140) uniform RGL_palette {
 
 // TODO: The problem, is that I think it's better to do it in post processing rather that with every object, perhaps it will even be faster?
 void main() {
-  color = vec4(1,1,1,1);
+  // color = vec4(1,1,1,1);
   // color = vec4(highlight, highlight, highlight, 1);
   // Since RGM is just OBJ but without the unordered shit, I guess the reversing of the coordnates has something to do with the fact that in obj the y=0 is the opposite.
-  // color = texture(RGL_texture, vec2(texturecoord.x, -texturecoord.y));
+  color = texture(RGL_texture, vec2(texturecoord.x, -texturecoord.y));
   
   int besti = 0;
   float dst = 100.0;

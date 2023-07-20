@@ -66,15 +66,15 @@ typedef struct {
   //   UCHAR channelsn;
   //   USHORT width, height;
   // } texture;
-  // UINT indicesn;
+  // UINT facesn;
   // UINT verticesn;
 
   // OpenGL stuff
   UINT to; // texture object
   UINT vao; // vertex array object
   UINT vbo; // vertex buffer object
-  UINT ibo; // index/element buffer object
-  UINT indicesn;
+  UINT fbo; // face/element buffer object
+  UINT facesn;
 } RGL_MODELDATA, *RGL_MODEL;
 
 // Just like a model, it is stored in RAM so it can be played around with via CPU.
@@ -129,12 +129,12 @@ void RGL_freeeye(RGL_EYE eye);
 // vbodata contains data of both the model vertices and the texture's vertices:
 // X Y Z U V ...
 // verticesn is the number of vbo elements there are.
-// ibodata simply contains data on the triangle array:
+// fbodata simply contains data on the triangle array:
 // T0 T1 T2 ...
-// indicesn is the number of those triplets that make triangles.
+// facesn is the number of those triplets that make triangles.
 // texture must be in R G B format, for now...
 // texturew/h is pretty self explanitory.
-RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
+RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT facesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
 // You can set program to 0 for the default retro program.
 RGL_MODEL RGL_loadmodel(const char* fp,  const char* texturefp);
 void RGL_freemodel(RGL_MODEL model);

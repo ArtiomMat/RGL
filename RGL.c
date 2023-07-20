@@ -255,9 +255,9 @@ void RGL_freeeye(RGL_EYE eye) {
   free(eye);
 }
 
-RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indicesn, UCHAR* texturedata, USHORT texturew, USHORT textureh) {
+RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT facesn, UCHAR* texturedata, USHORT texturew, USHORT textureh) {
   RGL_MODEL modelptr = malloc(sizeof(RGL_MODELDATA));
-  modelptr->indicesn = indicesn;
+  modelptr->facesn = facesn;
   // vao
   rglGenVertexArrays(1, &modelptr->vao);
   rglBindVertexArray(modelptr->vao);
@@ -278,11 +278,11 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* ibodata, UINT indi
   rglVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
   rglEnableVertexAttribArray(2);
 
-  // ibo
-  rglGenBuffers(1, &modelptr->ibo);
-  rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelptr->ibo);
+  // fbo
+  rglGenBuffers(1, &modelptr->fbo);
+  rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelptr->fbo);
   // Copy
-  rglBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesn * sizeof (UINT) * 3, ibodata, GL_STATIC_DRAW);
+  rglBufferData(GL_ELEMENT_ARRAY_BUFFER, facesn * sizeof (UINT) * 3, fbodata, GL_STATIC_DRAW);
 
   // to
   glGenTextures(1, &modelptr->to);
@@ -343,7 +343,7 @@ RGL_MODEL RGL_loadmodel(const char* fp, const char* texturefp) {
 
 void RGL_freemodel(RGL_MODEL model) {
   rglDeleteBuffers(1, &model->vbo);
-  rglDeleteBuffers(1, &model->ibo);
+  rglDeleteBuffers(1, &model->fbo);
   rglDeleteVertexArrays(1, &model->vao);
   glDeleteTextures(1, &model->to);
   
@@ -459,6 +459,9 @@ int RGL_loadcolors(const char* fp) {
     RGL_colors[rci+3] = 1;
   }
 
+  glClearColor(RGL_colors[0], RGL_colors[1], RGL_colors[2], 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   return 1;
 }
 
@@ -559,10 +562,8 @@ int RGL_init(UCHAR vsync, int width, int height) {
   printf("RGL: Successful initialization.\nRGL: Using OpenGL %s.\n", glGetString(GL_VERSION));
 
   // Some basic OpenGL setup.
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glEnable(GL_DEPTH_TEST);
   // Clear for the start
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
   return 1;
@@ -572,10 +573,33 @@ void RGL_settitle(const char* title) {
   SetWindowTextA(hWnd, title);
 }
 
+/*
+  TODO: FIX RENDERING PROBLEMS WHEN RENDERING DIFFERENT MODELS. What we know:
+    # A model is being partially rendered when rendering multiple models, sometimes it renders a single triangle, sometimes a few, it is random and seemingly weird. 
+    # The rendering issue depends on order of rendering the models.
+    # Rendering the highest poly model first "fixes" the issue, from current observations.
+    # Stopping the rendering of low poly models "fixes" the issue.
+
+    CONCLUSION:
+      It clearly has to do with the order of drawing, once we stop rendering lower poly models and render the high poly model first, WITH NO RELATION TO useprogram(was tested where I moved it to just the creation of the eye and never called it again), we get the high poly model rendering just fine.
+
+      Current explanation, some kind of typo.
+
+    # VAO, FBO, TO all are different for different models, was tested:
+    MODEL 1 - 4 1 8064192
+    MODEL 2 - 6 2 8064240
+    
+    # I suspect this is where it is happening, perhaps somewhere else, but this is the prime candidate.
+
+    # Using program in loop does not help.
+
+    # I think the actual fucking vertex shader is receiving the wrong number of faces or in general less faces than it is supposed to.
+*/
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
   if (!RGL_usedeye)
     puts("RGL: NO USED EYES!");
   
+
   useprogram(RGL_usedeye);
 
   for (int i = 0; i < n; i++) {
@@ -584,10 +608,10 @@ void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
     uniformbody(RGL_usedeye->program, bodies[i+_i]);
 
     glBindTexture(GL_TEXTURE_2D, model->to);
-    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->fbo);
     rglBindVertexArray(model->vao);
 
-    rglDrawElements(GL_TRIANGLES, model->indicesn*3, GL_UNSIGNED_INT, 0);
+    rglDrawElements(GL_TRIANGLES, model->facesn*3, GL_UNSIGNED_INT, 0);
   }
 }
 

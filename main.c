@@ -52,9 +52,10 @@ int main() {
   RGL_MODEL model = RGL_initmodel(vertices, 4, indices, 2, texturedata, 4, 4);
   RGL_MODEL model2 = RGL_loadmodel("mori.rgm", "mori.rgt");
 
-  RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
+  RGL_BODY bodies[] = {RGL_initbody(model, 0), RGL_initbody(model2, 0), RGL_initbody(model, 0)};
   bodies[0]->offset[2] += 5.5f;
-  bodies[1]->offset[0] += 6.0f;
+  bodies[1]->offset[0] += 1.0f;
+  bodies[1]->offset[2] += 2.0f;
   bodies[2]->offset[1] += 2.0f;
   bodies[2]->offset[2] += 2.0f;
 
@@ -64,7 +65,7 @@ int main() {
   // TODO: Notice when we render all the shit, the hand renders only 4 vertices, just like the quads *big brain*(*smol brain* because I am the one who fucked it up).
   TM_initwait();
   while (1) {
-    
+    i++;
     // eye->info.angles[1] += 0.01;
 
     // bodies[1]->angles[1] -= 0.3;
@@ -72,7 +73,11 @@ int main() {
     // bodies[1]->angles[2] += 0.2;
     // bodies[2]->angles[1] += 0.1;
 
-    RGL_drawbodies(bodies, 0, 3);
+    if (i > 10) {
+      RGL_drawbodies(bodies, 1, 1);
+    }
+    else
+      RGL_drawbodies(bodies, 0, 3);
     RGL_refresh();
 
     TM_wait();
