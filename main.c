@@ -4,6 +4,7 @@
 int main() {
   TM_init(30);
   RGL_init(0, 640, 400);
+  RGL_loadcolors("cranes.rgc");
   RGL_settitle("Momento Mori");
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);

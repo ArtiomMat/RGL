@@ -30,7 +30,7 @@ float getd(float z, float h) {
   // FIXME: a problem where one a vertex is thrown far away and it causes stretching of triangles. Perhaps create a formula for when the vertex is behind the vision plane.
   if (z > eye_p_near)
     return (h*eye_p_near)/z;
-  return h * 100;
+  return h; // NOTE: Changed from h*100, maybe it's not a good change, seems fine for now.
 }
 
 // There are two d_max so it's a parameter

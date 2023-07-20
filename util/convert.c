@@ -43,6 +43,11 @@ typedef struct {
   RGB* pixels;
 } RGT;
 
+typedef struct {
+  int colorsn;
+  RGB colors[256];
+} RGC;
+
 // Returns line length, not including \n in this case \0
 // Replaces \n with \0
 int freadl(char* str, int maxsize, FILE* f) {
@@ -171,7 +176,7 @@ void objtorgm(OBJ* obj, RGM* rgm) {
   }
 }
 
-void pngtorgt(const char* fp, RGT* rgt) {
+void loadpngasrgt(const char* fp, RGT* rgt) {
   FILE *file = fopen(fp, "rb");
   if (!file) {
       fprintf(stderr, "Error opening PNG file %s\n", fp);
@@ -288,6 +293,37 @@ void savergm(RGM* rgm, const char* fp) {
   fclose(f);
 }
 
+void loadgplasrgc(const char* fp, RGC* rgc) {
+  FILE* f = fopen(fp, "r");
+
+  char line[LINEMAXSIZE] = {1};
+
+  for (int i = 0; i < 4; i++)
+    freadl(line, LINEMAXSIZE, f);
+
+  rgc->colorsn = 0;
+  while (line[0]) {
+    freadl(line, LINEMAXSIZE, f);
+    sscanf(
+      line, 
+      "%hhu %hhu %hhu", 
+      rgc->colors[rgc->colorsn], rgc->colors[rgc->colorsn]+1, rgc->colors[rgc->colorsn]+2
+    );
+    rgc->colorsn++;
+  }
+
+  fclose(f);
+}
+
+void savergc(RGC* rgc, const char* fp) {
+  FILE* f = fopen(fp, "wb");
+
+  fwrite(&rgc->colorsn, sizeof(rgc->colorsn), 1, f);
+  fwrite(rgc->colors, sizeof(rgc->colors), 1, f);
+
+  fclose(f);
+}
+
 int main(int argsn, const char** args) {
   if (argsn < 4) {
     puts("convert <type> <input> <output>\ntypes:\n\tc: gpl -> RGL colors\n\tt: png -> RGL texture\n\tm: obj -> RGL model\n");
@@ -301,8 +337,14 @@ int main(int argsn, const char** args) {
   switch(type) {
     case 't':
     RGT rgt;
-    pngtorgt(input, &rgt);
+    loadpngasrgt(input, &rgt);
     savergt(&rgt, output);
+    break;
+
+    case 'c':
+    RGC rgc;
+    loadgplasrgc(input, &rgc);
+    savergc(&rgc, output);
     break;
 
     case 'm':
