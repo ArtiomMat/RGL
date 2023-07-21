@@ -255,7 +255,7 @@ void RGL_freeeye(RGL_EYE eye) {
   free(eye);
 }
 
-RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT facesn, UCHAR* texturedata, USHORT texturew, USHORT textureh) {
+RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT facesn, RGL_TEXTURE texture) {
   RGL_MODEL modelptr = malloc(sizeof(RGL_MODELDATA));
   modelptr->facesn = facesn;
   // vao
@@ -285,22 +285,12 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT face
   rglBufferData(GL_ELEMENT_ARRAY_BUFFER, facesn * sizeof (UINT) * 3, fbodata, GL_STATIC_DRAW);
 
   // to
-  glGenTextures(1, &modelptr->to);
-  glBindTexture(GL_TEXTURE_2D, modelptr->to);
-  
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texturew, textureh, 0, GL_RGB, GL_UNSIGNED_BYTE, texturedata);
-  // rglGenerateMipmap(GL_TEXTURE_2D);
-
+  modelptr->to = texture;
 
   return modelptr;
 }
 
-RGL_MODEL RGL_loadmodel(const char* fp, const char* texturefp) {
+RGL_MODEL RGL_loadmodel(const char* fp, RGL_TEXTURE texture) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
     printf("RGL: Could not load model '%s'.\n", fp);
@@ -319,24 +309,7 @@ RGL_MODEL RGL_loadmodel(const char* fp, const char* texturefp) {
 
   fclose(f);
 
-  // Texture
-  f = fopen(texturefp, "rb");
-  if (!f) {
-    printf("RGL: Could not load texture '%s'.\n", fp);
-    return 0;
-  }
-
-  UINT tw, th;
-  fread(&tw, sizeof(tw), 1, f);
-  fread(&th, sizeof(th), 1, f);
-
-  UCHAR texture[tw*th*3];
-
-  fread(texture, tw*th, 3, f);
-
-  fclose(f);
-
-  RGL_MODEL modelptr = RGL_initmodel(v, vn, faces, fn, texture, tw, th);
+  RGL_MODEL modelptr = RGL_initmodel(v, vn, faces, fn, texture);
 
   return modelptr;
 }
@@ -345,7 +318,6 @@ void RGL_freemodel(RGL_MODEL model) {
   rglDeleteBuffers(1, &model->vbo);
   rglDeleteBuffers(1, &model->fbo);
   rglDeleteVertexArrays(1, &model->vao);
-  glDeleteTextures(1, &model->to);
   
   free(model);
 }
@@ -363,6 +335,41 @@ RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags) {
 }
 void RGL_freebody(RGL_BODY bodyptr) {
   free(bodyptr);
+}
+
+RGL_TEXTURE RGL_loadtexture(const char* fp) {
+  FILE* f = fopen(fp, "rb");
+  if (!f) {
+    printf("RGL: Could not load texture '%s'.\n", fp);
+    return 0;
+  }
+
+  UINT tw, th;
+  fread(&tw, sizeof(tw), 1, f);
+  fread(&th, sizeof(th), 1, f);
+
+  UCHAR texture[tw*th*3];
+
+  fread(texture, tw*th, 3, f);
+  fclose(f);
+
+  // OpenGL
+  RGL_TEXTURE to;
+
+  glGenTextures(1, &to);
+  glBindTexture(GL_TEXTURE_2D, to);
+  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tw, th, 0, GL_RGB, GL_UNSIGNED_BYTE, texture);
+
+  return to;
+}
+void RGL_freetexture(RGL_TEXTURE texture) {
+  glDeleteTextures(1, &texture);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {

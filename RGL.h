@@ -20,7 +20,7 @@ typedef unsigned int UINT;
 typedef float RGL_VEC[3];
 typedef UINT RGL_TRI[3];
 
-typedef UINT RGL_PROGRAM, RGL_SHADER;
+typedef UINT RGL_TEXTURE, RGL_PROGRAM, RGL_SHADER;
 
 enum {
   RGL_VERTEXSHADER,
@@ -70,7 +70,7 @@ typedef struct {
   // UINT verticesn;
 
   // OpenGL stuff
-  UINT to; // texture object
+  RGL_TEXTURE to; // texture object
   UINT vao; // vertex array object
   UINT vbo; // vertex buffer object
   UINT fbo; // face/element buffer object
@@ -111,6 +111,10 @@ void RGL_free();
 RGL_SHADER RGL_loadshader(const char* fp, UINT type);
 void RGL_freeshader(RGL_SHADER shader);
 
+// RGL_TEXTURE
+RGL_TEXTURE RGL_loadtexture(const char* fp);
+void RGL_freetexture(RGL_TEXTURE texture);
+
 // RGL_PROGRAM
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader);
 RGL_PROGRAM RGL_loadprogram(const char* fp);
@@ -134,9 +138,9 @@ void RGL_freeeye(RGL_EYE eye);
 // facesn is the number of those triplets that make triangles.
 // texture must be in R G B format, for now...
 // texturew/h is pretty self explanitory.
-RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT facesn, UCHAR* texturedata, USHORT texturew, USHORT textureh);
+RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT facesn, RGL_TEXTURE texture);
 // You can set program to 0 for the default retro program.
-RGL_MODEL RGL_loadmodel(const char* fp,  const char* texturefp);
+RGL_MODEL RGL_loadmodel(const char* fp,  RGL_TEXTURE texture);
 void RGL_freemodel(RGL_MODEL model);
 // RGL_BODY
 RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags);

@@ -23,6 +23,8 @@ uniform vec3 RGL_angles;
 out vec2 texturecoord;
 out float highlight;
 
+const int gridsize = 32;
+
 // h being either x or y, depending on which d we are getting.
 float getd(float z, float h) {
   // So there is a very weird bug where vertices go crazy once they go outside of the view. Apparently, it has to do with points that are below the near plane on the z axis, and adding the following check and branching results, fixed it, from current observations.
@@ -74,8 +76,8 @@ void main() {
   // Calculate light stuff
   vec3 RGL_light = vec3(3, -7, -3);
   RGL_light -= RGL_offset;
-  RGL_light = rotate(RGL_angles, RGL_light);
-  vec3 L = normalize(vert-RGL_light);
+  RGL_light = rotate(-RGL_angles, RGL_light);
+  vec3 L = normalize(RGL_light-vert);
   highlight = dot(normal, L);
 
   // Rotate around camera
@@ -83,10 +85,11 @@ void main() {
   finale = rotate(-eye_angles, finale);
 
   // Lock the vertex to a grid.
-  ivec3 ifinale = ivec3(32*finale);
-  finale = vec3(ifinale)/32;
+  ivec3 ifinale = ivec3(gridsize*finale);
+  finale = vec3(ifinale)/gridsize;
   
-  float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
+  // Note depth in OpenGL, very weirdly is from -1 to 1
+  float depth = 2*(finale.z-eye_p_near)/(eye_p_far-eye_p_near)-1; // Depth is just normalized z
   float dx = getd(finale.z, finale.x);
   float dy = getd(finale.z, finale.y);
   gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), depth, 1.0);
