@@ -586,9 +586,9 @@ void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
     uniformbody(RGL_usedeye->program, bodies[i+_i]);
 
     glBindTexture(GL_TEXTURE_2D, model->to);
-    rglBindBuffer(GL_ARRAY_BUFFER, model->vbo);
+    // rglBindBuffer(GL_ARRAY_BUFFER, model->vbo);
     rglBindVertexArray(model->vao);
-    // HISTORICAL NOTE: This fucking call caused me so much pain, apparently putting this call BEFORE rglBindVertexArray will cause the models to fucking partially render and everything becomes weird.
+    // HISTORICAL NOTE: This fucking call caused me so much pain, apparently OpenGL reads the vao the moment you bind the EBO, hence biinding the VAO after the EBO causes OpenGL to not actually read that VAO we just bound, but reather the last one, GG.
     rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->fbo);
 
     rglDrawElements(GL_TRIANGLES, model->facesn*3, GL_UNSIGNED_INT, 0);
