@@ -386,27 +386,27 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_KEYDOWN:
     case WM_KEYUP:
     int down = (WM_KEYDOWN == uMsg);
-    // float speed = 0.1f;
-    // if (down) {
-    //   if (wParam == 'W') {
-    //     RGL_usedeye->info.offset[2] += speed;
-    //   }
-    //   else if (wParam == 'S') {
-    //     RGL_usedeye->info.offset[2] -= speed;
-    //   }
-    //   else if (wParam == 'A') {
-    //     RGL_usedeye->info.offset[0] -= speed;
-    //   }
-    //   else if (wParam == 'D') {
-    //     RGL_usedeye->info.offset[0] += speed;
-    //   }
-    //   else if (wParam == 'Q') {
-    //     RGL_usedeye->info.angles[1] += speed;
-    //   }
-    //   else if (wParam == 'E') {
-    //     RGL_usedeye->info.angles[1] -= speed;
-    //   }
-    // }
+    float speed = 0.1f;
+    if (down) {
+      if (wParam == 'W') {
+        RGL_usedeye->info.offset[2] += speed;
+      }
+      else if (wParam == 'S') {
+        RGL_usedeye->info.offset[2] -= speed;
+      }
+      else if (wParam == 'A') {
+        RGL_usedeye->info.offset[0] -= speed;
+      }
+      else if (wParam == 'D') {
+        RGL_usedeye->info.offset[0] += speed;
+      }
+      else if (wParam == 'Q') {
+        RGL_usedeye->info.angles[1] += speed;
+      }
+      else if (wParam == 'E') {
+        RGL_usedeye->info.angles[1] -= speed;
+      }
+    }
     break;
 
     case WM_LBUTTONDOWN:
@@ -573,28 +573,6 @@ void RGL_settitle(const char* title) {
   SetWindowTextA(hWnd, title);
 }
 
-/*
-  TODO: FIX RENDERING PROBLEMS WHEN RENDERING DIFFERENT MODELS. What we know:
-    # A model is being partially rendered when rendering multiple models, sometimes it renders a single triangle, sometimes a few, it is random and seemingly weird. 
-    # The rendering issue depends on order of rendering the models.
-    # Rendering the highest poly model first "fixes" the issue, from current observations.
-    # Stopping the rendering of low poly models "fixes" the issue.
-
-    CONCLUSION:
-      It clearly has to do with the order of drawing, once we stop rendering lower poly models and render the high poly model first, WITH NO RELATION TO useprogram(was tested where I moved it to just the creation of the eye and never called it again), we get the high poly model rendering just fine.
-
-      Current explanation, some kind of typo.
-
-    # VAO, FBO, TO all are different for different models, was tested:
-    MODEL 1 - 4 1 8064192
-    MODEL 2 - 6 2 8064240
-    
-    # I suspect this is where it is happening, perhaps somewhere else, but this is the prime candidate.
-
-    # Using program in loop does not help.
-
-    # I think the actual fucking vertex shader is receiving the wrong number of faces or in general less faces than it is supposed to.
-*/
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
   if (!RGL_usedeye)
     puts("RGL: NO USED EYES!");
@@ -608,8 +586,10 @@ void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
     uniformbody(RGL_usedeye->program, bodies[i+_i]);
 
     glBindTexture(GL_TEXTURE_2D, model->to);
-    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->fbo);
+    rglBindBuffer(GL_ARRAY_BUFFER, model->vbo);
     rglBindVertexArray(model->vao);
+    // HISTORICAL NOTE: This fucking call caused me so much pain, apparently putting this call BEFORE rglBindVertexArray will cause the models to fucking partially render and everything becomes weird.
+    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->fbo);
 
     rglDrawElements(GL_TRIANGLES, model->facesn*3, GL_UNSIGNED_INT, 0);
   }
