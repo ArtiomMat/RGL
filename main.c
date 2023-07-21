@@ -55,13 +55,12 @@ int main() {
   RGL_MODEL model = RGL_loadmodel("untitled.rgm", "mori.rgt");
   RGL_MODEL model2 = RGL_loadmodel("mori.rgm", "mori.rgt");
 
-  RGL_BODY body0 =  RGL_initbody(model, 0);
-  RGL_BODY body1 = RGL_initbody(model2, 0);
-  // bodies[0]->offset[2] += 5.5f;
-  // bodies[1]->offset[0] += 1.0f;
-  // bodies[1]->offset[2] += 2.0f;
-  // bodies[2]->offset[1] += 2.0f;
-  // bodies[2]->offset[2] += 2.0f;
+  RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
+  bodies[0]->offset[2] += 5.5f;
+  bodies[1]->offset[0] += 1.0f;
+  bodies[1]->offset[2] += 2.0f;
+  bodies[2]->offset[1] += 2.0f;
+  bodies[2]->offset[2] += 2.0f;
 
   // eye->info.angles[1] -= 1;
   int i = 0;
@@ -73,12 +72,11 @@ int main() {
     // eye->info.angles[1] += 0.01;
 
     // bodies[1]->angles[1] -= 0.3;
-    // bodies[0]->angles[1] -= 0.05;
+    bodies[0]->angles[1] -= 0.05;
     // bodies[1]->angles[2] += 0.2;
     // bodies[2]->angles[1] += 0.1;
 
-    RGL_drawbodies(&body0, 0, 1);
-    RGL_drawbodies(&body1, 0, 1);
+    RGL_drawbodies(bodies, 0, 3);
 
     RGL_refresh();
 

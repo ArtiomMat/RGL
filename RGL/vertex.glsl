@@ -74,13 +74,17 @@ void main() {
   // Calculate light stuff
   vec3 RGL_light = vec3(3, -7, -3);
   RGL_light -= RGL_offset;
-  RGL_light = rotate(-RGL_angles, RGL_light);
-  vec3 L = normalize(RGL_light-vert);
+  RGL_light = rotate(RGL_angles, RGL_light);
+  vec3 L = normalize(vert-RGL_light);
   highlight = dot(normal, L);
 
   // Rotate around camera
   finale -= eye_offset;
   finale = rotate(-eye_angles, finale);
+
+  // Lock the vertex to a grid.
+  ivec3 ifinale = ivec3(32*finale);
+  finale = vec3(ifinale)/32;
   
   float depth = (finale.z-eye_p_near)/(eye_p_far-eye_p_near); // Depth is just normalized z
   float dx = getd(finale.z, finale.x);
