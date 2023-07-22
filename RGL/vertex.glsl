@@ -22,7 +22,6 @@ uniform vec3 RGL_angles;
 
 out vec2 texturecoord;
 out float highlight;
-out float vcolor;
 
 const int gridsize = 32;
 
