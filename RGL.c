@@ -580,27 +580,33 @@ void RGL_settitle(const char* title) {
   SetWindowTextA(hWnd, title);
 }
 
-void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
+void RGL_begin() {
   if (!RGL_usedeye)
     puts("RGL: NO USED EYES!");
   
   useprogram(RGL_usedeye);
+}
 
+void RGL_drawbody(RGL_BODY body) {
+  RGL_MODEL model = body->model;
+
+  uniformbody(RGL_usedeye->program, body);
+
+  glBindTexture(GL_TEXTURE_2D, model->to);
+  rglBindVertexArray(model->vao);
+  // HISTORICAL NOTE: This fucking call caused me so much pain, apparently OpenGL reads the vao the moment you bind the EBO, hence biinding the VAO after the EBO causes OpenGL to not actually read that VAO we just bound, but reather the last one, GG.
+  rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->fbo);
+
+  rglDrawElements(GL_TRIANGLES, model->facesn*3, GL_UNSIGNED_INT, 0);
+}
+
+void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n) {
   for (int i = 0; i < n; i++) {
-    RGL_MODEL model = bodies[i+_i]->model;
-
-    uniformbody(RGL_usedeye->program, bodies[i+_i]);
-
-    glBindTexture(GL_TEXTURE_2D, model->to);
-    rglBindVertexArray(model->vao);
-    // HISTORICAL NOTE: This fucking call caused me so much pain, apparently OpenGL reads the vao the moment you bind the EBO, hence biinding the VAO after the EBO causes OpenGL to not actually read that VAO we just bound, but reather the last one, GG.
-    rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->fbo);
-
-    rglDrawElements(GL_TRIANGLES, model->facesn*3, GL_UNSIGNED_INT, 0);
+    RGL_drawbody(bodies[i+_i]);
   }
 }
 
-void RGL_refresh() {
+void RGL_end() {
   SwapBuffers(hDC);
 
   static MSG Msg;

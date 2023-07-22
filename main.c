@@ -7,7 +7,7 @@ int main() {
   RGL_loadcolors("cranes.rgc");
   RGL_settitle("Momento Mori");
 
-  RGL_setcursor(0, 0);
+  // RGL_setcursor(0, 0);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
@@ -62,7 +62,7 @@ int main() {
   bodies[1]->offset[2] += 2.0f;
   bodies[2]->offset[1] += 2.0f;
   bodies[2]->offset[2] += 2.0f;
-    bodies[0]->angles[1] -= 3.141/2;
+  // bodies[0]->angles[1] -= 3.141/2;
 
   // eye->info.angles[1] -= 1;
   int i = 0;
@@ -77,9 +77,9 @@ int main() {
     // bodies[1]->angles[2] += 0.2;
     // bodies[2]->angles[1] += 0.1;
 
-    RGL_drawbodies(bodies, 0, 3);
-
-    RGL_refresh();
+    RGL_begin();
+      RGL_drawbody(bodies[0]);
+    RGL_end();
 
     TM_wait();
     // puts("OK");

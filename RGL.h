@@ -6,6 +6,8 @@
   #define EXTERN extern
 #endif
 
+#define RGL_LIGHTSN 16
+
 /*
 	RGL - Retro Graphics Library
 	This library mimics retro graphics.
@@ -58,17 +60,6 @@ typedef struct {
 
 // A model can be played around with via CPU, since it's stored in RAM, and you don't have to update it, unlike an RGL_BODY.
 typedef struct {
-  // float* vertices;
-  // UINT* indices;
-  // struct {
-  //   UCHAR* pixels; // 0 to 1, the structure depends on channels
-  //   float* vertices; // UV wrapping data, Same count as vertices n.
-  //   UCHAR channelsn;
-  //   USHORT width, height;
-  // } texture;
-  // UINT facesn;
-  // UINT verticesn;
-
   // OpenGL stuff
   RGL_TEXTURE to; // texture object
   UINT vao; // vertex array object
@@ -83,9 +74,18 @@ typedef struct {
   RGL_MODEL model;
   RGL_VEC offset;
   RGL_VEC angles;
-  // USHORT framei;
   UCHAR flags;
 } RGL_BODYDATA, *RGL_BODY;
+
+typedef struct {
+  RGL_VEC offset;
+  float align0;
+  RGL_VEC angles;
+  RGL_VEC color;
+  float strength;
+  float size;
+  int type;
+} RGL_LIGHTDATA, *RGL_LIGHT;
 
 EXTERN UINT RGL_width, RGL_height;
 // Includes alpha
@@ -95,16 +95,21 @@ EXTERN UINT RGL_mousex, RGL_mousey;
 
 EXTERN RGL_EYE RGL_usedeye;
 
+// Terminated with (RGL_LIGHT)0, since RGL_LIGHT is a pointer.
+EXTERN RGL_LIGHT RGL_lights[RGL_LIGHTSN];
+
 // General RGL
 // I don't recommend using frame capping if you vsync.
 int RGL_init(UCHAR vsync, int width, int height);
 void RGL_settitle(const char* title);
 int RGL_loadcolors(const char* fp);
 void RGL_setcursor(char shown, char captured);
+void RGL_begin();
+void RGL_drawbody(RGL_BODY body);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change RGL_usedeye, but the first eye you create is set automatically.
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
 // Call after draw calls.
-void RGL_refresh();
+void RGL_end();
 void RGL_free();
 
 // RGL_SHADER

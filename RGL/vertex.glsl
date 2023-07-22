@@ -22,6 +22,7 @@ uniform vec3 RGL_angles;
 
 out vec2 texturecoord;
 out float highlight;
+out float vcolor;
 
 const int gridsize = 32;
 
@@ -74,22 +75,34 @@ void main() {
   finale += RGL_offset;
   
   // Calculate light stuff
-  vec3 RGL_light = vec3(3, -7, -3);
+  vec3 RGL_light = vec3(-4, 4, 5.5);
   RGL_light -= RGL_offset;
   RGL_light = rotate(-RGL_angles, RGL_light);
   vec3 L = normalize(RGL_light-vert);
   highlight = dot(normal, L);
 
+
   // Rotate around camera
   finale -= eye_offset;
+
+  // Eye offset is now 0,0,0, since we moved the mf, so it's just -finale
+  vec3 dirtocam = normalize(-finale);
+  edn = dot(dirtocam, normal); // Eye Dot Normal, is used to avoid rendering useless faces
+
   finale = rotate(-eye_angles, finale);
 
   // Lock the vertex to a grid.
   ivec3 ifinale = ivec3(gridsize*finale);
   finale = vec3(ifinale)/gridsize;
-  
+
   // Note depth in OpenGL, very weirdly is from -1 to 1
-  float depth = 2*(finale.z-eye_p_near)/(eye_p_far-eye_p_near)-1; // Depth is just normalized z
+  float depth;
+  if (edn < 0)
+    depth = 2;
+  else
+    depth = 2*(finale.z-eye_p_near)/(eye_p_far-eye_p_near)-1; // Depth is just normalized z
+
+  
   float dx = getd(finale.z, finale.x);
   float dy = getd(finale.z, finale.y);
   gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), depth, 1.0);
