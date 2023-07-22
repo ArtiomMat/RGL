@@ -15,18 +15,18 @@ layout(std140) uniform RGL_palette {
 void main() {
   // color = vec4(1,1,1,1);
   // Since RGM is just OBJ but without the unordered shit, I guess the reversing of the coordnates has something to do with the fact that in obj the y=0 is the opposite.
-  color = vec4(highlight,1) * texture(RGL_texture, vec2(texturecoord.x, -texturecoord.y));
+  color = vec4(highlight/2+0.5,1) * texture(RGL_texture, vec2(texturecoord.x, -texturecoord.y));
   
-  int besti = 0;
-  float dst = 100.0;
+  // int besti = 0;
+  // float dst = 100.0;
   
-  for (int i = 0; i < 256; i++) {
-    float curdst = distance(RGL_colors[i], color);
-    if (curdst < dst) {
-      besti = i;
-      dst = curdst;
-    }
-  }
+  // for (int i = 0; i < 256; i++) {
+  //   float curdst = distance(RGL_colors[i], color);
+  //   if (curdst < dst) {
+  //     besti = i;
+  //     dst = curdst;
+  //   }
+  // }
   
-  color = RGL_colors[besti];
+  // color = RGL_colors[besti];
 }

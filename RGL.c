@@ -217,14 +217,14 @@ static void useprogram(RGL_EYE eye) {
 
   // lights
   rglBindBuffer(GL_UNIFORM_BUFFER, eye->lightsubo);
-  for (int i = 0; i < RGL_MAXLIGHTSN; i++) {
-    if (!eye->lights[i]) { // The array is terminated with (RGL_LIGHT)0
-      eye->sun.lightsn = i;
+  int i;
+  for (i = 0; i < RGL_MAXLIGHTSN; i++) {
+    if (!eye->lights[i]) // The array is terminated with (RGL_LIGHT)0
       break;
-    }
+      
     rglBufferSubData(GL_UNIFORM_BUFFER, i*sizeof(RGL_LIGHTDATA), sizeof(RGL_LIGHTDATA), eye->lights[i]);
   }
-
+  eye->sun.lightsn = i;
   // sun
   // NOTE: WE SET UP LIGHTSN IN THE LOOP
   rglBindBuffer(GL_UNIFORM_BUFFER, eye->sunubo);
@@ -275,10 +275,29 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   zerovec(eyeptr->sun.suncolor);
   zerovec(eyeptr->sun.sundir);
 
-  eyeptr->sun.suncolor[0] = 2;
+  // TODO: THIS IS TO REMOVE BTW
+  eyeptr->lights[0] = RGL_initlight(2);
+  eyeptr->lights[0]->color[0] = 0;
+  eyeptr->lights[0]->color[1] = 0;
+  eyeptr->lights[0]->color[2] = 3;
+  eyeptr->lights[0]->offset[0] = 4;
+  eyeptr->lights[0]->offset[1] = 0;
+  eyeptr->lights[0]->offset[2] = 10;
+
+  eyeptr->lights[1] = RGL_initlight(2);
+  eyeptr->lights[1]->color[0] = 2;
+  eyeptr->lights[1]->color[1] = 0;
+  eyeptr->lights[1]->color[2] = 2;
+  eyeptr->lights[1]->offset[1] = 3;
+  eyeptr->lights[1]->offset[2] = 0;
+
+  eyeptr->lights[2] = 0;
+
+  eyeptr->sun.suncolor[0] = 0;
   eyeptr->sun.suncolor[1] = 2;
-  eyeptr->sun.suncolor[2] = 2;
+  eyeptr->sun.suncolor[2] = 0;
   eyeptr->sun.sundir[0] = -1;
+  eyeptr->sun.sundir[1] = 1;
 
   if (!RGL_usedeye)
     RGL_usedeye = eyeptr;
@@ -452,7 +471,7 @@ void RGL_freetexture(RGL_TEXTURE texture) {
 RGL_LIGHT RGL_initlight(float strength) {
   RGL_LIGHT light = malloc(sizeof(RGL_LIGHTDATA));
   zerovec(light->offset);
-  setvec(light->color, 1);
+  setvec(light->color, strength);
   return light;
 }
 void RGL_freelight(RGL_LIGHT light) {
@@ -474,9 +493,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
       // Extract the mouse coordinates from the lParam parameter
       RGL_mousex = LOWORD(lParam);
       RGL_mousey = HIWORD(lParam);
-
-      if (cursorcaptured)
-        SetCursorPos(RGL_width>>1, RGL_height>>1);
       break;
     }
 
@@ -520,8 +536,18 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 void RGL_setcursor(char captured) {
-  cursorcaptured = captured;
-  ShowCursor(captured);
+  if (captured) {
+    cursorcaptured = captured;
+    RECT rect;
+    GetClientRect(hWnd, &rect);
+
+    // Lock the cursor within the window's client area
+    ClipCursor(&rect);
+  }
+  else {
+    ClipCursor(0);
+  }
+  ShowCursor(!captured);
 }
 
 int RGL_init(UCHAR vsync, int width, int height) {

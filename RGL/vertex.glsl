@@ -92,7 +92,19 @@ void main() {
   // vec3 L = normalize(RGL_light-vert);
   // highlight = vec3(dot(normal, L));
 
-  highlight = dot(normal, normalize(sundir)) * suncolor;
+  highlight = vec3(0);
+
+  for (int i = 0; i < lightsn; i++) {
+    vec3 offset = lights[i].offset;
+    offset -= RGL_offset;
+    offset = rotate(-RGL_angles, offset); // FIXME: Probably broken, the idea is though Instead of rotating the normals, the light can be rotated!
+    vec3 dst = offset-vert;
+    vec3 L = normalize(dst); // We don't use finale since it's rotated, and if we use finale it's just a double rotation.
+    highlight += vec3(dot(normal, L)) * lights[i].color;// /length(dst);
+  }
+
+  // Finally the sun calculation
+  highlight += (dot(normal, normalize(sundir))) * suncolor;
 
   // Shift the model by the camera's offset
   finale -= eye.offset;
@@ -114,7 +126,6 @@ void main() {
     depth = 2;
   else
     depth = 2*(finale.z-eye.p_near)/(eye.p_far-eye.p_near)-1; // Depth is just normalized z
-
   
   float dx = getd(finale.z, finale.x);
   float dy = getd(finale.z, finale.y);

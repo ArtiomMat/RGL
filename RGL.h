@@ -58,6 +58,7 @@ typedef struct {
   RGL_VEC offset;
   float _padding1;
   RGL_VEC color;
+  float _padding2;
 } RGL_LIGHTDATA, *RGL_LIGHT;
 
 typedef struct {
