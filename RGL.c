@@ -12,6 +12,14 @@
 
 #define CLASSNAME "RGLWND"
 
+// TODO: HOW ABOUT YOU GET YOUR SHIT TOGETHER AND MAKE ALL THE NAMES IN THE SHADERS AND PROGRAM TO MATCH AH?
+enum {
+  EYEUBOBINDING,
+  LIGHTSUBOBINDING,
+  SUNUBOBINDING,
+  PALETTEUBOBINDING,
+};
+
 static HINSTANCE hInstance;
 
 static HWND hWnd = NULL;
@@ -19,17 +27,7 @@ static HDC hDC = NULL;
 
 static HGLRC hGLRC = NULL;
 
-typedef BOOL (*WGLSWAPINTERVAL) (int interval);
-
-static WGLSWAPINTERVAL wglSwapIntervalEXT = NULL;
-
-#define DMAXTABLESIZE 16
-// Cached dmax-es
-// A constant sent to vertex shader.
-// If we look at the perspective as a fustrum, this is the size of the smaller part.
-// The reason it is RGL_d_max is because there is a d parameter that is the signed distance from the center of the screen.
-// We then normalize d using RGL_d_max*2
-static float dmaxtable[DMAXTABLESIZE];
+static char cursorcaptured = 0;
 
 static void vecsub(RGL_VEC a, RGL_VEC b, RGL_VEC out) {
   out[0] = a[0] - b[0];
@@ -43,7 +41,13 @@ static void zerovec(RGL_VEC a) {
   a[2] = 0;
 }
 
-// Pass the actual opengl enum to type, like GL_VERTEX_SHADER.
+static void setvec(RGL_VEC a, float v) {
+  a[0] = v;
+  a[1] = v;
+  a[2] = v;
+}
+
+
 RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
@@ -78,11 +82,10 @@ RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
     return 0;
   }
 
-  const char* ptrdata = data; // Dark magic because can't pass array pointers
-
+  const char* ptrdata = data; // Doing some dark magic because can't pass array pointers
   rglShaderSource(shader, 1, &ptrdata, NULL);
+  
   rglCompileShader(shader);
-
   int success;
   rglGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
@@ -90,7 +93,7 @@ RGL_SHADER RGL_loadshader(const char* fp, UINT type) {
     info[0] = 'c';
     info[1] = 0;
     rglGetShaderInfoLog(shader, sizeof(info), NULL, info);
-    printf("RGL: Compilation of shader '%s' unsuccessful.\nINFO: %s\n", fp, info);
+    printf("RGL: Compilation of shader '%s' unsuccessful.\nOpenGL Log:\n%s\n", fp, info);
     RGL_freeshader(shader);
     return 0;
   }
@@ -102,12 +105,9 @@ void RGL_freeshader(RGL_SHADER shader) {
   rglDeleteShader(shader);
 }
 
-static void uniformpalette(RGL_PROGRAM program) {
-  INT i;
-  i = rglGetUniformLocation(program, "RGL_palette");
-  rglUniform4fv(i, 256, RGL_colors);
-}
-
+// TODO: Make the program store the locations of uniforms, cache the mfs.
+// Make it a more complex structure.
+// Used to send all uniform information about the body to the shader
 static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
   INT i;
   i = rglGetUniformLocation(program, "RGL_offset");
@@ -123,16 +123,15 @@ RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader) {
     return 0;
   }
 
-  if (vertshader)
-    rglAttachShader(program, vertshader);
-  if (fragshader)
-    rglAttachShader(program, fragshader);
-  rglLinkProgram(program);
+  rglAttachShader(program, vertshader);
+  rglAttachShader(program, fragshader);
 
+  rglLinkProgram(program);
   int success;
   rglGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    printf("RGL: Program linking failed.\n");
+    printf("RGL: Program linking failed. Not a common occurance(ERROR: %d).\n", 
+    glGetError());
     return 0;
   }
 
@@ -164,7 +163,7 @@ RGL_PROGRAM RGL_loadprogram(const char* fp) {
   GLint status;
   rglGetProgramiv(program, GL_VALIDATE_STATUS, &status);
   if (!status) {
-    printf("RGL: Program '%s' is invalid.\n", fp);
+    printf("RGL: Loaded program '%s' is invalid.\n", fp);
     RGL_freeprogram(program);
     return 0;
   }
@@ -172,7 +171,7 @@ RGL_PROGRAM RGL_loadprogram(const char* fp) {
   return program;
 }
 
-void RGL_saveprogram(RGL_PROGRAM program, const char* fp) {
+int RGL_saveprogram(RGL_PROGRAM program, const char* fp) {
   GLsizei len;
   GLenum format;
   rglGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &len);
@@ -182,35 +181,71 @@ void RGL_saveprogram(RGL_PROGRAM program, const char* fp) {
   rglGetProgramBinary(program, len, NULL, &format, data);
 
   FILE* f = fopen(fp, "wb");
+  if (!f) {
+    printf("RGL: Could not save program '%s'.\n", fp);
+    return 0;
+  }
+
   fwrite(&format, sizeof(GLenum), 1, f);
   fwrite(&len, sizeof(GLsizei), 1, f);
   fwrite(data, len, 1, f);
 
   fclose(f);
+  return 1;
 }
 
 void RGL_freeprogram(RGL_PROGRAM program) {
   rglDeleteProgram(program);
 }
 
-// Ratio factor should be 1 for the d_max on the x axis.
-static float calcrd_max(RGL_EYE eye) {
+// Calculates rdx/y_max for the eye.
+static void calcrd_max(RGL_EYE eye) {
   float ratio = (1.0f*RGL_height)/RGL_width;
   float rd_max = 1 / (tanf(eye->fov/2) * eye->info.p_near);
   eye->info.rdx_max = ratio * rd_max;
   eye->info.rdy_max = 1 * rd_max;
 }
 
-// Assumes program is currently in use
+// Apart from actually using the program it sets up the eye's UBOs and stuff.
+// This should be called only in RGL_begin, only when the program begins drawing a new frame.
 static void useprogram(RGL_EYE eye) {
-  // Bind and copy ubo data.
   calcrd_max(eye);
   rglUseProgram(eye->program);
+  // Bind and copy ubo data.
   rglBindBuffer(GL_UNIFORM_BUFFER, eye->ubo);
-  rglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(eye->info), &eye->info);
+  rglBufferSubData(GL_UNIFORM_BUFFER, EYEUBOBINDING, sizeof(eye->info), &eye->info);
+
+  // lights
+  rglBindBuffer(GL_UNIFORM_BUFFER, eye->lightsubo);
+  for (int i = 0; i < RGL_MAXLIGHTSN; i++) {
+    if (!eye->lights[i]) { // The array is terminated with (RGL_LIGHT)0
+      eye->sun.lightsn = i;
+      break;
+    }
+    rglBufferSubData(GL_UNIFORM_BUFFER, i*sizeof(RGL_LIGHTDATA), sizeof(RGL_LIGHTDATA), eye->lights[i]);
+  }
+
+  // sun
+  // NOTE: WE SET UP LIGHTSN IN THE LOOP
+  rglBindBuffer(GL_UNIFORM_BUFFER, eye->sunubo);
+  rglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(eye->sun), &eye->sun);
+}
+
+// Returns the UBO
+static UINT initubo(RGL_PROGRAM program, int index, int bufsize, const char* uniformname) {  
+  UINT ubo;
+
+  rglUseProgram(program);
+  rglGenBuffers(1, &ubo);
+  rglBindBuffer(GL_UNIFORM_BUFFER, ubo);
+  rglBufferData(GL_UNIFORM_BUFFER, bufsize, 0, GL_DYNAMIC_DRAW);
   
-  // rglBindBuffer(GL_UNIFORM_BUFFER, eye->colorsubo);
-  // rglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(RGL_colors), RGL_colors);
+  // Actually bind the UBO to the uniform
+  int i = rglGetUniformBlockIndex(program, uniformname);
+  rglUniformBlockBinding(program, i, index);
+  rglBindBufferBase(GL_UNIFORM_BUFFER, index, ubo);
+
+  return ubo;
 }
 
 RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
@@ -225,33 +260,74 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   eyeptr->info.p_near = 0.0001f;
   
   // Setup the ubo that holds the eye info, which is in eyeptr->info
-  rglUseProgram(eyeptr->program);
-  rglGenBuffers(1, &eyeptr->ubo);
-  rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->ubo);
-  rglBufferData(GL_UNIFORM_BUFFER, sizeof(eyeptr->info), 0, GL_DYNAMIC_DRAW);
-  
-  int i = rglGetUniformBlockIndex(program, "RGL_eye");
-  rglUniformBlockBinding(program, i, 0);
-  rglBindBufferBase(GL_UNIFORM_BUFFER, 0, eyeptr->ubo);
+  // rglUseProgram(eyeptr->program);
+  // rglGenBuffers(1, &eyeptr->ubo);
+  // rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->ubo);
+  // rglBufferData(GL_UNIFORM_BUFFER, sizeof(eyeptr->info), 0, GL_DYNAMIC_DRAW);
+  // // Actually bind the UBO to the uniform
+  // int i = rglGetUniformBlockIndex(program, "RGL_eye");
+  // rglUniformBlockBinding(program, i, 0);
+  // rglBindBufferBase(GL_UNIFORM_BUFFER, 0, eyeptr->ubo);
+  eyeptr->ubo = initubo(eyeptr->program, EYEUBOBINDING, sizeof(eyeptr->info), "RGL_eye");
+  eyeptr->lightsubo = initubo(eyeptr->program, LIGHTSUBOBINDING, sizeof(RGL_LIGHTDATA)*RGL_MAXLIGHTSN, "RGL_lights");
+  eyeptr->sunubo = initubo(eyeptr->program, SUNUBOBINDING, sizeof(eyeptr->sun), "RGL_sun");
 
-  // Setup the colors palette
-  rglGenBuffers(1, &eyeptr->colorsubo);
-  rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->colorsubo);
-  rglBufferData(GL_UNIFORM_BUFFER, sizeof(RGL_colors), RGL_colors, GL_STATIC_DRAW);
-  i = rglGetUniformBlockIndex(program, "RGL_palette");
-  rglUniformBlockBinding(program, i, 1);
-  rglBindBufferBase(GL_UNIFORM_BUFFER, 1, eyeptr->colorsubo);
+  zerovec(eyeptr->sun.suncolor);
+  zerovec(eyeptr->sun.sundir);
+
+  eyeptr->sun.suncolor[0] = 2;
+  eyeptr->sun.suncolor[1] = 2;
+  eyeptr->sun.suncolor[2] = 2;
+  eyeptr->sun.sundir[0] = -1;
 
   if (!RGL_usedeye)
     RGL_usedeye = eyeptr;
 
   return eyeptr;
 }
+
+int RGL_loadcolors(RGL_EYE eyeptr, const char* fp) {
+  FILE* f = fopen(fp, "rb");
+  if (!f) {
+    printf("RGL: Could not load color palette '%s'.\n", fp);
+    return 0;
+  }
+
+  int n;
+  fread(&n, sizeof(n), 1, f);
+
+  static float colors[256*4];
+  for (int i = 0; i < n*4; i+=4) {
+    colors[i+0] = ((UCHAR)fgetc(f))/255.0f;
+    colors[i+1] = ((UCHAR)fgetc(f))/255.0f;
+    colors[i+2] = ((UCHAR)fgetc(f))/255.0f;
+    colors[i+3] = 1.0f;
+  }
+
+  fclose(f);
+
+  // Setup the colors palette
+  // TODO: Make RGL_COLORS, and make it just a UBO. then in RGL_initeye make it bind to the binding block.
+  rglGenBuffers(1, &eyeptr->colorsubo);
+  rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->colorsubo);
+  rglBufferData(GL_UNIFORM_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+  int i = rglGetUniformBlockIndex(eyeptr->program, "RGL_palette");
+  rglUniformBlockBinding(eyeptr->program, i, PALETTEUBOBINDING);
+  rglBindBufferBase(GL_UNIFORM_BUFFER, PALETTEUBOBINDING, eyeptr->colorsubo);
+
+  // Clear the mf
+  glClearColor(colors[0], colors[1], colors[2], 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  return 1;
+}
+
 void RGL_freeeye(RGL_EYE eye) {
   if (RGL_usedeye == eye)
     RGL_usedeye = NULL;
 
   rglDeleteBuffers(1, &eye->ubo);
+  rglDeleteBuffers(1, &eye->colorsubo);
   free(eye);
 }
 
@@ -265,9 +341,9 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT face
   // vbo
   rglGenBuffers(1, &modelptr->vbo);
   rglBindBuffer(GL_ARRAY_BUFFER, modelptr->vbo);
-  // Copy to OpenGL
   rglBufferData(GL_ARRAY_BUFFER, verticesn * sizeof (float) * 8, vbodata, GL_STATIC_DRAW);
   
+  // Adding the attributes to the vbo
   // Vertices
   rglVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
   rglEnableVertexAttribArray(0);
@@ -281,7 +357,6 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT face
   // fbo
   rglGenBuffers(1, &modelptr->fbo);
   rglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelptr->fbo);
-  // Copy
   rglBufferData(GL_ELEMENT_ARRAY_BUFFER, facesn * sizeof (UINT) * 3, fbodata, GL_STATIC_DRAW);
 
   // to
@@ -337,7 +412,7 @@ void RGL_freebody(RGL_BODY bodyptr) {
   free(bodyptr);
 }
 
-RGL_TEXTURE RGL_loadtexture(const char* fp) {
+RGL_TEXTURE RGL_loadtexture(const char* fp, char mipmap) {
   FILE* f = fopen(fp, "rb");
   if (!f) {
     printf("RGL: Could not load texture '%s'.\n", fp);
@@ -359,17 +434,29 @@ RGL_TEXTURE RGL_loadtexture(const char* fp) {
   glGenTextures(1, &to);
   glBindTexture(GL_TEXTURE_2D, to);
   
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmap?GL_NEAREST_MIPMAP_NEAREST:GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tw, th, 0, GL_RGB, GL_UNSIGNED_BYTE, texture);
+  if (mipmap)
+    rglGenerateMipmap(GL_TEXTURE_2D);
 
   return to;
 }
 void RGL_freetexture(RGL_TEXTURE texture) {
   glDeleteTextures(1, &texture);
+}
+
+RGL_LIGHT RGL_initlight(float strength) {
+  RGL_LIGHT light = malloc(sizeof(RGL_LIGHTDATA));
+  zerovec(light->offset);
+  setvec(light->color, 1);
+  return light;
+}
+void RGL_freelight(RGL_LIGHT light) {
+  free(light);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -387,6 +474,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
       // Extract the mouse coordinates from the lParam parameter
       RGL_mousex = LOWORD(lParam);
       RGL_mousey = HIWORD(lParam);
+
+      if (cursorcaptured)
+        SetCursorPos(RGL_width>>1, RGL_height>>1);
       break;
     }
 
@@ -429,47 +519,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
   }
 }
 
-void RGL_setcursor(char shown, char captured) {
-  if (captured) {
-    RECT rc;
-    GetClientRect(hWnd, &rc);
-    MapWindowPoints(hWnd, NULL, (POINT*)&rc, 2);
-    ClipCursor(&rc);
-  }
-  else
-    ClipCursor(NULL);
-  
-  ShowCursor(shown);
-}
-
-int RGL_loadcolors(const char* fp) {
-  FILE* f = fopen(fp, "rb");
-  if (!f) {
-    printf("RGL: Could not load colors file '%s'.\n", fp);
-    return 0;
-  }
-
-  int n;
-  fread(&n, sizeof(n), 1, f);
-
-  UCHAR colors[n*3];
-  fread(colors, 3, n, f);
-
-  fclose(f);
-
-  for (int i = 0; i < n; i++) {
-    int rci = i*4;
-    int ci  = i*3;
-    RGL_colors[rci+0] = colors[ci+0]/255.0f;
-    RGL_colors[rci+1] = colors[ci+1]/255.0f;
-    RGL_colors[rci+2] = colors[ci+2]/255.0f;
-    RGL_colors[rci+3] = 1;
-  }
-
-  glClearColor(RGL_colors[0], RGL_colors[1], RGL_colors[2], 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  return 1;
+void RGL_setcursor(char captured) {
+  cursorcaptured = captured;
+  ShowCursor(captured);
 }
 
 int RGL_init(UCHAR vsync, int width, int height) {
@@ -570,8 +622,6 @@ int RGL_init(UCHAR vsync, int width, int height) {
 
   // Some basic OpenGL setup.
   glEnable(GL_DEPTH_TEST);
-  // Clear for the start
-
 
   return 1;
 }
@@ -581,10 +631,14 @@ void RGL_settitle(const char* title) {
 }
 
 void RGL_begin() {
-  if (!RGL_usedeye)
-    puts("RGL: NO USED EYES!");
+  if (!RGL_usedeye) {
+    puts("RGL: NO USE EYES!");
+    return;
+  }
   
   useprogram(RGL_usedeye);
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void RGL_drawbody(RGL_BODY body) {
@@ -615,8 +669,6 @@ void RGL_end() {
     TranslateMessage(&(Msg));
     DispatchMessageA(&(Msg));
   }
-  
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void RGL_free() {

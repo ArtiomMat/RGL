@@ -6,7 +6,16 @@
   #define EXTERN extern
 #endif
 
-#define RGL_LIGHTSN 16
+// THIS MUST MATCH THE LIGHT NUMBER IN THE VERTEX SHADER!
+#define RGL_MAXLIGHTSN 16
+
+enum {
+  // Culling of individaul triangles is always a thing, but entire body culling is disabled by default, since maybe the body is a map.
+  // Culling happens based on the body's offset to the camera, done on the CPU.
+  GL_BODYFLCULLED = 1<<0,
+  // Mainly useful for skyboxes, they wont be affected by lights and can safely just hover above the model.
+  GL_BODYFLUNLIT = 1<<1,
+};
 
 /*
 	RGL - Retro Graphics Library
@@ -20,13 +29,17 @@ typedef unsigned short USHORT;
 typedef unsigned int UINT;
 
 typedef float RGL_VEC[3];
-typedef UINT RGL_TRI[3];
 
-typedef UINT RGL_TEXTURE, RGL_PROGRAM, RGL_SHADER;
+// A GPU object, hence you cannot modify it in your program, not without functions.
+typedef UINT RGL_TEXTURE, RGL_PROGRAM, RGL_SHADER, RGL_COLORS;
 
 enum {
   RGL_VERTEXSHADER,
   RGL_FRAGMENTSHADER,
+};
+
+enum {
+  RGL_INPUTBUTTON,
 };
 
 typedef struct {
@@ -34,28 +47,45 @@ typedef struct {
   union {
     struct {
       UINT code;
-    } key;
+    } button;
 
   };
 } RGL_INPUT;
 
+// These are used within an eye, and stored withing an eye.
+// Currently only point light
+typedef struct {
+  RGL_VEC offset;
+  float _padding1;
+  RGL_VEC color;
+} RGL_LIGHTDATA, *RGL_LIGHT;
+
 typedef struct {
   struct {
     RGL_VEC offset;
-    float padding1; // Padding to align angles to a 16-byte boundary
+    float _padding1; // Padding to align angles to a 16-byte boundary, caused quite a bit of issues until I figured it out.
     RGL_VEC angles;
-    // float padding2; // Padding to align subsequent members
     float p_near;
     float p_far;
-    // So inverse of 2*d_max, on both y and x.
+    // So inverse of d_max, on both y and x.
     // Since we are ratio aware!
     float rdx_max;
     float rdy_max;
   } info;
+  struct {
+    RGL_VEC sundir;
+    float _padding1;
+    RGL_VEC suncolor;
+    int lightsn;
+  } sun;
+  // Terminated with (RGL_LIGHT)0, it's a pointer so it's valid.
+  RGL_LIGHT lights[RGL_MAXLIGHTSN];
   float fov;
   RGL_PROGRAM program;
   UINT ubo; // What contains shader information about the camera
-  UINT colorsubo; // What contains shader information about the camera
+  UINT colorsubo; // Contains color information about the palette
+  UINT lightsubo;
+  UINT sunubo;
 } RGL_EYEDATA, *RGL_EYE;
 
 // A model can be played around with via CPU, since it's stored in RAM, and you don't have to update it, unlike an RGL_BODY.
@@ -77,33 +107,18 @@ typedef struct {
   UCHAR flags;
 } RGL_BODYDATA, *RGL_BODY;
 
-typedef struct {
-  RGL_VEC offset;
-  float align0;
-  RGL_VEC angles;
-  RGL_VEC color;
-  float strength;
-  float size;
-  int type;
-} RGL_LIGHTDATA, *RGL_LIGHT;
 
 EXTERN UINT RGL_width, RGL_height;
-// Includes alpha
-EXTERN float RGL_colors[256*4];
 
 EXTERN UINT RGL_mousex, RGL_mousey;
 
 EXTERN RGL_EYE RGL_usedeye;
 
-// Terminated with (RGL_LIGHT)0, since RGL_LIGHT is a pointer.
-EXTERN RGL_LIGHT RGL_lights[RGL_LIGHTSN];
-
 // General RGL
 // I don't recommend using frame capping if you vsync.
 int RGL_init(UCHAR vsync, int width, int height);
 void RGL_settitle(const char* title);
-int RGL_loadcolors(const char* fp);
-void RGL_setcursor(char shown, char captured);
+void RGL_setcursor(char captured);
 void RGL_begin();
 void RGL_drawbody(RGL_BODY body);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change RGL_usedeye, but the first eye you create is set automatically.
@@ -117,19 +132,26 @@ RGL_SHADER RGL_loadshader(const char* fp, UINT type);
 void RGL_freeshader(RGL_SHADER shader);
 
 // RGL_TEXTURE
-RGL_TEXTURE RGL_loadtexture(const char* fp);
+// mipmap is 0 for not using mipmaps, 1 for using
+RGL_TEXTURE RGL_loadtexture(const char* fp, char mipmap);
 void RGL_freetexture(RGL_TEXTURE texture);
 
 // RGL_PROGRAM
 RGL_PROGRAM RGL_initprogram(RGL_SHADER vertshader, RGL_SHADER fragshader);
 RGL_PROGRAM RGL_loadprogram(const char* fp);
 // For caching the program in the disk.
-void RGL_saveprogram(RGL_PROGRAM program, const char* fp);
+int RGL_saveprogram(RGL_PROGRAM program, const char* fp);
 void RGL_freeprogram(RGL_PROGRAM program);
+
+// RGL_LIGHT
+// Position and color can be modifed within the struct itself.
+RGL_LIGHT RGL_initlight(float strength);
+void RGL_freelight(RGL_LIGHT light);
 
 // RGL_EYE
 // fov is in radians.
 RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov);
+int RGL_loadcolors(RGL_EYE eye, const char* fp);
 void RGL_freeeye(RGL_EYE eye);
 
 // RGL_MODEL

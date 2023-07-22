@@ -8,20 +8,35 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 i_texturevert;
 
 layout(std140) uniform RGL_eye {
-  vec3 eye_offset;
-  vec3 eye_angles;
-  float eye_p_near;
-  float eye_p_far;
+  vec3 offset;
+  vec3 angles;
+  float p_near;
+  float p_far;
   // r is for inverse, so it's 1/2*dx/y_max^.
-  float eye_rdx_max;
-  float eye_rdy_max;
+  float rdx_max;
+  float rdy_max;
+} eye;
+
+layout(std140) uniform RGL_sun {
+  vec3 sundir; // DIRECTION OF THE SUUUUUUUUUUUUUUUN
+  vec3 suncolor;
+  int lightsn;
+};
+
+struct lightdata {
+  vec3 offset;
+  vec3 color;
+};
+
+layout(std140) uniform RGL_lights {
+  lightdata lights[16];
 };
 
 uniform vec3 RGL_offset;
 uniform vec3 RGL_angles;
 
 out vec2 texturecoord;
-out float highlight;
+out vec3 highlight;
 
 const int gridsize = 32;
 
@@ -29,9 +44,8 @@ const int gridsize = 32;
 float getd(float z, float h) {
   // So there is a very weird bug where vertices go crazy once they go outside of the view. Apparently, it has to do with points that are below the near plane on the z axis, and adding the following check and branching results, fixed it, from current observations.
   // My theory: We use a method where a triangle is inside another triangle and since they are below the z, this d/x=n/z formula breaks, as it does not account for the z being below the near plane. This results in the formula "thinking" that the triangle is in the view, since the x is within the vision plane, but it really is not. so thorwing d to like 100*x, will result in d/rd_max giving a result where the point is surely outside the view, we also make sure to include x, because of it's sign.
-  // FIXME: a problem where one a vertex is thrown far away and it causes stretching of triangles. Perhaps create a formula for when the vertex is behind the vision plane.
-  if (z > eye_p_near)
-    return (h*eye_p_near)/z;
+  if (z > eye.p_near)
+    return (h*eye.p_near)/z;
   return h; // NOTE: Changed from h*100, maybe it's not a good change, seems fine for now.
 }
 
@@ -66,29 +80,29 @@ vec3 rotate(vec3 a, vec3 p) {
 
 void main() {
   texturecoord = i_texturevert; // For the fragment shader
-  // gl_Position = vec4(i_texturevert-0.5, 0.5, 1.0);
-  // return;
 
   // Rotate around model(self)
   vec3 finale = rotate(RGL_angles, vert);
   finale += RGL_offset;
   
   // Calculate light stuff
-  vec3 RGL_light = vec3(-4, 4, 5.5);
-  RGL_light -= RGL_offset;
-  RGL_light = rotate(-RGL_angles, RGL_light);
-  vec3 L = normalize(RGL_light-vert);
-  highlight = dot(normal, L);
+  // vec3 RGL_light = vec3(-4, 4, 5.5);
+  // RGL_light -= RGL_offset;
+  // RGL_light = rotate(-RGL_angles, RGL_light);
+  // vec3 L = normalize(RGL_light-vert);
+  // highlight = vec3(dot(normal, L));
 
+  highlight = dot(normal, normalize(sundir)) * suncolor;
 
-  // Rotate around camera
-  finale -= eye_offset;
+  // Shift the model by the camera's offset
+  finale -= eye.offset;
 
   // Eye offset is now 0,0,0, since we moved the mf, so it's just -finale
   vec3 dirtocam = normalize(-finale);
-  edn = dot(dirtocam, normal); // Eye Dot Normal, is used to avoid rendering useless faces
+  float edn = dot(dirtocam, normal); // Eye Dot Normal, is used to avoid rendering useless faces.
 
-  finale = rotate(-eye_angles, finale);
+  // Rotate the model around the camera
+  finale = rotate(-eye.angles, finale);
 
   // Lock the vertex to a grid.
   ivec3 ifinale = ivec3(gridsize*finale);
@@ -96,13 +110,13 @@ void main() {
 
   // Note depth in OpenGL, very weirdly is from -1 to 1
   float depth;
-  if (edn < 0)
+  if (edn < 0) // edn is only part of the whole face culling system.
     depth = 2;
   else
-    depth = 2*(finale.z-eye_p_near)/(eye_p_far-eye_p_near)-1; // Depth is just normalized z
+    depth = 2*(finale.z-eye.p_near)/(eye.p_far-eye.p_near)-1; // Depth is just normalized z
 
   
   float dx = getd(finale.z, finale.x);
   float dy = getd(finale.z, finale.y);
-  gl_Position = vec4(normalize_d(dx, eye_rdx_max), normalize_d(dy, eye_rdy_max), depth, 1.0);
+  gl_Position = vec4(normalize_d(dx, eye.rdx_max), normalize_d(dy, eye.rdy_max), depth, 1.0);
 }

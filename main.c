@@ -4,10 +4,9 @@
 int main() {
   TM_init(30);
   RGL_init(0, 640, 400);
-  RGL_loadcolors("cranes.rgc");
   RGL_settitle("Momento Mori");
 
-  // RGL_setcursor(0, 0);
+  RGL_setcursor(1);
   
   RGL_SHADER vert = RGL_loadshader("RGL/vertex.glsl", RGL_VERTEXSHADER);
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
@@ -18,6 +17,7 @@ int main() {
   // RGL_PROGRAM prog = RGL_loadprogram("RGL/program.glpb");
 
   RGL_EYE eye = RGL_initeye(prog, 1.3);
+  RGL_loadcolors(eye, "cranes.rgc");
 
   float vertices[] = {
     // positions          // texture coords
@@ -52,8 +52,8 @@ int main() {
   };
 
   // RGL_MODEL model = RGL_initmodel(vertices, 5, indices, 3, texturedata, 4, 4);
-  RGL_MODEL model = RGL_loadmodel("untitled.rgm",RGL_loadtexture("mori.rgt"));
-  RGL_MODEL model2 = RGL_loadmodel("frank.rgm", RGL_loadtexture("frank.rgt"));
+  RGL_MODEL model = RGL_loadmodel("untitled.rgm",RGL_loadtexture("mori.rgt", 1));
+  RGL_MODEL model2 = RGL_loadmodel("frank.rgm", RGL_loadtexture("frank.rgt", 1));
 
   RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
   bodies[0]->offset[2] += 5.5f;
