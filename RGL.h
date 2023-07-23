@@ -36,11 +36,9 @@ typedef UINT RGL_TEXTURE, RGL_PROGRAM, RGL_SHADER, RGL_COLORS;
 typedef struct {
   UINT p; // OpenGL program object
 
-  UINT body_offsetu;
-  UINT body_anglesu;
-
-  UINT eyeubo; // What contains shader information about the camera
-  UINT colorsubo; // Contains color information about the palette
+  UINT bodyubo;
+  UINT eyeubo;
+  UINT colorsubo;
   UINT lightsubo;
   UINT sunubo;
 } RGL_PROGRAMDATA;
@@ -49,20 +47,6 @@ enum {
   RGL_VERTEXSHADER,
   RGL_FRAGMENTSHADER,
 };
-
-enum {
-  RGL_INPUTBUTTON,
-};
-
-typedef struct {
-  UINT type;
-  union {
-    struct {
-      UINT code;
-    } button;
-
-  };
-} RGL_INPUT;
 
 // These are used within an eye, and stored withing an eye.
 // Currently only point light
@@ -116,16 +100,42 @@ typedef struct {
 typedef struct {
   RGL_MODEL model;
   RGL_VEC offset;
+  float _padding1;
   RGL_VEC angles;
-  UCHAR flags;
+  int flags;
 } RGL_BODYDATA, *RGL_BODY;
 
+enum {
+  RGL_KMOUSEL,
+  RGL_KMOUSEM,
+  RGL_KMOUSER,
+  
+  RGL_KWINDOWEXIT, // Only has down, no up.
+
+  RGL_KCONTROL,
+  RGL_KCAPTIAL,
+  RGL_KTAB,
+  RGL_KMETA,
+  RGL_KENTER,
+  RGL_KBACKSPACE,
+  RGL_KSPACE,
+  RGL_KSHIFT,
+  RGL_KESCAPE,
+
+  RGL_KUP,
+  RGL_KDOWN,
+  RGL_KRIGHT,
+  RGL_KLEFT,
+};
 
 EXTERN UINT RGL_width, RGL_height;
 
 EXTERN UINT RGL_mousex, RGL_mousey;
 
 EXTERN RGL_EYE RGL_usedeye;
+
+// Keep in mind that RGL will send down signals even if the key was not pressed this frame, but is still held down, this is not very useful as WinAPI for example has a pause in these cases and the behaviour is not very useful, so it's better to have logic in your program that ignores additional down signals until an up signal, and repeat.
+EXTERN void (*RGL_keycb) (int key, int down);
 
 // General RGL
 // I don't recommend using frame capping if you vsync.

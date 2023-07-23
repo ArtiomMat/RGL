@@ -1,10 +1,16 @@
 #include "RGL.h"
 #include "TM.h"
 
+void rglkeycb(int key, int down) {
+  printf("%d\n", key);
+}
+
 int main() {
   TM_init(30);
   RGL_init(0, 640, 400);
   RGL_settitle("Momento Mori");
+
+  RGL_keycb = rglkeycb;
 
   RGL_setcursor(1);
   
@@ -71,11 +77,7 @@ int main() {
   TM_initwait();
   while (1) {
     i++;
-    // eye->info.angles[1] += 0.01;
-
-    // bodies[1]->angles[1] -= 0.3;
-    // bodies[1]->angles[2] += 0.2;
-    // bodies[2]->angles[1] += 0.1;
+    eye->info.angles[1] = 3.141f*((1.0f)*RGL_mousex/RGL_width-0.5f);
 
     RGL_begin();
       RGL_drawbody(bodies[0]);

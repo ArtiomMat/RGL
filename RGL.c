@@ -17,7 +17,8 @@ enum {
   EYEUBOBINDING,
   LIGHTSUBOBINDING,
   SUNUBOBINDING,
-  PALETTEUBOBINDING,
+  COLORSUBOBINDING,
+  BODYUBOBINDING,
 };
 
 static HINSTANCE hInstance;
@@ -322,8 +323,8 @@ int RGL_loadcolors(RGL_EYE eyeptr, const char* fp) {
   rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->colorsubo);
   rglBufferData(GL_UNIFORM_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
   int i = rglGetUniformBlockIndex(eyeptr->program, "colorsinfo");
-  rglUniformBlockBinding(eyeptr->program, i, PALETTEUBOBINDING);
-  rglBindBufferBase(GL_UNIFORM_BUFFER, PALETTEUBOBINDING, eyeptr->colorsubo);
+  rglUniformBlockBinding(eyeptr->program, i, COLORSUBOBINDING);
+  rglBindBufferBase(GL_UNIFORM_BUFFER, COLORSUBOBINDING, eyeptr->colorsubo);
 
   // Clear the mf
   glClearColor(colors[0], colors[1], colors[2], 1.0f);
@@ -476,7 +477,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     // Using this for Wine compatability. other shit wont work.
     case WM_SYSCOMMAND:
     if (wParam == SC_CLOSE)
-      ExitProcess(0);
+      RGL_keycb(RGL_KWINDOWEXIT, 1);
     else
       return DefWindowProc(hWnd, uMsg, wParam, lParam);
     break;
@@ -491,36 +492,73 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     case WM_KEYDOWN:
     case WM_KEYUP:
-    int down = (WM_KEYDOWN == uMsg);
-    float speed = 0.1f;
-    if (down) {
-      if (wParam == 'W') {
-        RGL_usedeye->info.offset[2] += speed;
+    if (RGL_keycb) {
+      char down = (WM_KEYDOWN == uMsg);
+      int key = wParam;
+      switch (wParam) {
+        case VK_SHIFT:
+        key = RGL_KSHIFT;
+        break;
+        case VK_CONTROL:
+        key = RGL_KCONTROL;
+        break;
+        case VK_RETURN:
+        key = RGL_KENTER;
+        break;
+        case VK_ESCAPE:
+        key = RGL_KESCAPE;
+        break;
+        case VK_BACK:
+        key = RGL_KBACKSPACE;
+        break;
+        case VK_SPACE:
+        key = RGL_KSPACE;
+        break;
+        case VK_DOWN:
+        key = RGL_KDOWN;
+        break;
+        case VK_UP:
+        key = RGL_KUP;
+        break;
+        case VK_RIGHT:
+        key = RGL_KRIGHT;
+        break;
+        case VK_LEFT:
+        key = RGL_KLEFT;
+        break;
+        case VK_CAPITAL:
+        key = RGL_KCAPTIAL;
+        break;
+        case VK_MENU:
+        key = RGL_KMETA;
+        break;
+        case VK_TAB:
+        key = RGL_KTAB;
+        break;
       }
-      else if (wParam == 'S') {
-        RGL_usedeye->info.offset[2] -= speed;
-      }
-      else if (wParam == 'A') {
-        RGL_usedeye->info.offset[0] -= speed;
-      }
-      else if (wParam == 'D') {
-        RGL_usedeye->info.offset[0] += speed;
-      }
-      else if (wParam == 'Q') {
-        RGL_usedeye->info.angles[1] += speed;
-      }
-      else if (wParam == 'E') {
-        RGL_usedeye->info.angles[1] -= speed;
-      }
+      RGL_keycb(key, down);
     }
     break;
 
     case WM_LBUTTONDOWN:
-    // TODO:
+    RGL_keycb(RGL_KMOUSEL, 1);
     break;
-    
     case WM_LBUTTONUP:
-    // TODO:
+    RGL_keycb(RGL_KMOUSEL, 0);
+    break;
+
+    case WM_RBUTTONDOWN:
+    RGL_keycb(RGL_KMOUSER, 1);
+    break;
+    case WM_RBUTTONUP:
+    RGL_keycb(RGL_KMOUSER, 0);
+    break;
+
+    case WM_MBUTTONDOWN:
+    RGL_keycb(RGL_KMOUSEM, 1);
+    break;
+    case WM_MBUTTONUP:
+    RGL_keycb(RGL_KMOUSEM, 0);
     break;
 
     default:
@@ -548,7 +586,8 @@ int RGL_init(UCHAR vsync, int width, int height) {
 
   RGL_width = width;
   RGL_height = height;
-  RGL_usedeye = NULL;
+  RGL_usedeye = 0;
+  RGL_keycb = 0;
 
   // Create the class
   WNDCLASSEX wc = {0};
