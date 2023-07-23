@@ -1,8 +1,15 @@
+#include <stdio.h>
+
 #include "RGL.h"
 #include "TM.h"
 
+RGL_EYE eye;
+
 void rglkeycb(int key, int down) {
-  printf("%d\n", key);
+  if (key == 'W')
+    eye->info.offset[2] += 0.1;
+  if (key == 'A')
+    eye->info.offset[0] -= 0.1;
 }
 
 int main() {
@@ -18,56 +25,56 @@ int main() {
   RGL_SHADER frag = RGL_loadshader("RGL/fragment.glsl", RGL_FRAGMENTSHADER);
 
   RGL_PROGRAM prog = RGL_initprogram(vert, frag);
+  RGL_loadcolors(prog, "cranes.rgc");
   // RGL_saveprogram(prog, "RGL/program.glpb");
 
-  // RGL_PROGRAM prog = RGL_loadprogram("RGL/program.glpb");
+  // RGL_OLDPROGRAM prog = RGL_loadprogram("RGL/program.glpb");
 
-  RGL_EYE eye = RGL_initeye(prog, 1.3);
-  RGL_loadcolors(eye, "cranes.rgc");
+  eye = RGL_initeye(prog, 1.3);
 
-  float vertices[] = {
-    // positions          // texture coords
-     0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-     0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-    -0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-    -0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
-    -0.5f,  0.7f, 0.1f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
-  };
-  UINT indices[] = {  // note that we start from 0!
-    0, 1, 3,   // first triangle
-    1, 2, 3,    // second triangle
-    2, 3, 4    // second triangle
-  };  
-  UCHAR texturedata[] = {
-    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
+  // float vertices[] = {
+  //   // positions          // texture coords
+  //    0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+  //    0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+  //   -0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+  //   -0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+  //   -0.5f,  0.7f, 0.1f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+  // };
+  // UINT indices[] = {  // note that we start from 0!
+  //   0, 1, 3,   // first triangle
+  //   1, 2, 3,    // second triangle
+  //   2, 3, 4    // second triangle
+  // };  
+  // UCHAR texturedata[] = {
+  //   255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
 
-    255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
+  //   255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
 
-    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
+  //   255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
 
-    255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
-  };
-  UCHAR texturedata2[] = {
-    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
+  //   255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
+  // };
+  // UCHAR texturedata2[] = {
+  //   0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
 
-    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
+  //   0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
 
-    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
+  //   0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
 
-    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
-  };
+  //   0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
+  // };
 
   // RGL_MODEL model = RGL_initmodel(vertices, 5, indices, 3, texturedata, 4, 4);
   RGL_MODEL model = RGL_loadmodel("untitled.rgm",RGL_loadtexture("mori.rgt", 1));
   RGL_MODEL model2 = RGL_loadmodel("frank.rgm", RGL_loadtexture("frank.rgt", 1));
 
   RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
-  bodies[0]->offset[2] += 5.5f;
-  bodies[0]->offset[1] -= 5.5f;
-  bodies[1]->offset[0] += 1.0f;
-  bodies[1]->offset[2] += 2.0f;
-  bodies[2]->offset[1] += 2.0f;
-  bodies[2]->offset[2] += 2.0f;
+  bodies[0]->info.offset[2] += 5.5f;
+  bodies[0]->info.offset[1] -= 5.5f;
+  bodies[1]->info.offset[0] += 1.0f;
+  bodies[1]->info.offset[2] += 2.0f;
+  bodies[2]->info.offset[1] += 2.0f;
+  bodies[2]->info.offset[2] += 2.0f;
   // bodies[0]->angles[1] -= 3.141/2;
 
   // eye->info.angles[1] -= 1;

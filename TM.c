@@ -19,7 +19,7 @@ static ULONG LastFrameTime;
 ULONG TM_init(UCHAR GameFPS) {
 	TM_GameMSPF = 1000/GameFPS;
 
-	ULONG MinSleepRes, MaxSleepRes, DefaultSleepRes;
+	ULONG MinSleepRes, DefaultSleepRes;
 	// Ticks are measuered in 100 nanoseconds
 	NtQueryTimerResolution(&MinSleepRes, &DefaultSleepRes, &DefaultSleepRes);
 	DefaultSleepRes /= 10000;

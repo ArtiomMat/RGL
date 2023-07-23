@@ -32,8 +32,11 @@ layout(std140) uniform lightsinfo {
   lightdata lights[16];
 };
 
-uniform vec3 body_offset;
-uniform vec3 body_angles;
+layout(std140) uniform bodyinfo {
+  vec3 body_offset;
+  vec3 body_angles;
+  int body_flags;
+};
 
 out vec2 f_t;
 out vec3 f_highlight;

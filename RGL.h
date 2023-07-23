@@ -31,17 +31,22 @@ typedef unsigned int UINT;
 typedef float RGL_VEC[3];
 
 // A GPU object, hence you cannot modify it in your program, not without functions.
-typedef UINT RGL_TEXTURE, RGL_PROGRAM, RGL_SHADER, RGL_COLORS;
+typedef UINT RGL_TEXTURE, RGL_OLDPROGRAM, RGL_SHADER, RGL_COLORS;
+
+// The binding indieces of all the UBOs a program in RGL has.
+enum {
+  RGL_EYEUBOINDEX,
+  RGL_LIGHTSUBOINDEX,
+  RGL_SUNUBOINDEX,
+  RGL_COLORSUBOINDEX,
+  RGL_BODYUBOINDEX,
+  RGL_UBOSN,
+};
 
 typedef struct {
   UINT p; // OpenGL program object
-
-  UINT bodyubo;
-  UINT eyeubo;
-  UINT colorsubo;
-  UINT lightsubo;
-  UINT sunubo;
-} RGL_PROGRAMDATA;
+  UINT ubos[RGL_UBOSN];
+} RGL_PROGRAMDATA, *RGL_PROGRAM;
 
 enum {
   RGL_VERTEXSHADER,
@@ -58,7 +63,7 @@ typedef struct {
 } RGL_LIGHTDATA, *RGL_LIGHT;
 
 typedef struct {
-  struct {
+  struct RGL_EYEINFO {
     RGL_VEC offset;
     float _padding1; // Padding to align angles to a 16-byte boundary, caused quite a bit of issues until I figured it out.
     RGL_VEC angles;
@@ -69,7 +74,7 @@ typedef struct {
     float rdx_max;
     float rdy_max;
   } info;
-  struct {
+  struct RGL_SUNINFO {
     RGL_VEC sundir;
     float _padding1;
     RGL_VEC suncolor;
@@ -79,10 +84,6 @@ typedef struct {
   RGL_LIGHT lights[RGL_MAXLIGHTSN];
   float fov;
   RGL_PROGRAM program;
-  UINT eyeubo; // What contains shader information about the camera
-  UINT colorsubo; // Contains color information about the palette
-  UINT lightsubo;
-  UINT sunubo;
 } RGL_EYEDATA, *RGL_EYE;
 
 // A model can be played around with via CPU, since it's stored in RAM, and you don't have to update it, unlike an RGL_BODY.
@@ -99,10 +100,13 @@ typedef struct {
 // A body is an instance of a model, it exists in the rendering context and has an offset and other realtime attributes.
 typedef struct {
   RGL_MODEL model;
-  RGL_VEC offset;
-  float _padding1;
-  RGL_VEC angles;
-  int flags;
+  // The reason it's in a struct it needs to be passed over to OpenGL as a UBO
+  struct RGL_BODYINFO {
+    RGL_VEC offset;
+    float _padding1;
+    RGL_VEC angles;
+    int flags;
+  } info;
 } RGL_BODYDATA, *RGL_BODY;
 
 enum {
@@ -165,6 +169,7 @@ RGL_PROGRAM RGL_loadprogram(const char* fp);
 // For caching the program in the disk.
 int RGL_saveprogram(RGL_PROGRAM program, const char* fp);
 void RGL_freeprogram(RGL_PROGRAM program);
+int RGL_loadcolors(RGL_PROGRAM program, const char* fp);
 
 // RGL_LIGHT
 // Position and color can be modifed within the struct itself.
@@ -174,7 +179,6 @@ void RGL_freelight(RGL_LIGHT light);
 // RGL_EYE
 // fov is in radians.
 RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov);
-int RGL_loadcolors(RGL_EYE eye, const char* fp);
 void RGL_freeeye(RGL_EYE eye);
 
 // RGL_MODEL
@@ -193,5 +197,5 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT face
 RGL_MODEL RGL_loadmodel(const char* fp,  RGL_TEXTURE texture);
 void RGL_freemodel(RGL_MODEL model);
 // RGL_BODY
-RGL_BODY RGL_initbody(RGL_MODEL model, UCHAR flags);
+RGL_BODY RGL_initbody(RGL_MODEL model, int flags);
 void RGL_freebody(RGL_BODY body);
