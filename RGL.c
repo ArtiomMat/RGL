@@ -97,8 +97,6 @@ void RGL_freeshader(RGL_SHADER shader) {
   rglDeleteShader(shader);
 }
 
-// TODO: Make the program store the locations of uniforms, cache the mfs.
-// Make it a more complex structure.
 // Used to send all uniform information about the body to the shader
 static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
   // INT i;
@@ -289,29 +287,7 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   zerovec(eyeptr->sun.suncolor);
   zerovec(eyeptr->sun.sundir);
 
-  // TODO: THIS IS TO REMOVE BTW
-  eyeptr->lights[0] = RGL_initlight(2);
-  eyeptr->lights[0]->color[0] = 0;
-  eyeptr->lights[0]->color[1] = 0;
-  eyeptr->lights[0]->color[2] = 3;
-  eyeptr->lights[0]->offset[0] = 4;
-  eyeptr->lights[0]->offset[1] = 0;
-  eyeptr->lights[0]->offset[2] = 10;
-
-  eyeptr->lights[1] = RGL_initlight(2);
-  eyeptr->lights[1]->color[0] = 2;
-  eyeptr->lights[1]->color[1] = 0;
-  eyeptr->lights[1]->color[2] = 2;
-  eyeptr->lights[1]->offset[1] = 3;
-  eyeptr->lights[1]->offset[2] = 0;
-
-  eyeptr->lights[2] = 0;
-
-  eyeptr->sun.suncolor[0] = 0;
-  eyeptr->sun.suncolor[1] = 2;
-  eyeptr->sun.suncolor[2] = 0;
-  eyeptr->sun.sundir[0] = -1;
-  eyeptr->sun.sundir[1] = 1;
+  eyeptr->lights[0] = 0;
 
   if (!RGL_usedeye)
     RGL_usedeye = eyeptr;
@@ -484,6 +460,11 @@ void RGL_freelight(RGL_LIGHT light) {
   free(light);
 }
 
+static void pipetokeycb(int key, int down) {
+  if (RGL_keycb)
+    RGL_keycb(key, down);
+}
+
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
     // Using this for Wine compatability. other shit wont work.
@@ -548,29 +529,29 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         key = RGL_KTAB;
         break;
       }
-      RGL_keycb(key, down);
+      pipetokeycb(key, down);
     }
     break;
 
     case WM_LBUTTONDOWN:
-    RGL_keycb(RGL_KMOUSEL, 1);
+    pipetokeycb(RGL_KMOUSEL, 1);
     break;
     case WM_LBUTTONUP:
-    RGL_keycb(RGL_KMOUSEL, 0);
+    pipetokeycb(RGL_KMOUSEL, 0);
     break;
 
     case WM_RBUTTONDOWN:
-    RGL_keycb(RGL_KMOUSER, 1);
+    pipetokeycb(RGL_KMOUSER, 1);
     break;
     case WM_RBUTTONUP:
-    RGL_keycb(RGL_KMOUSER, 0);
+    pipetokeycb(RGL_KMOUSER, 0);
     break;
 
     case WM_MBUTTONDOWN:
-    RGL_keycb(RGL_KMOUSEM, 1);
+    pipetokeycb(RGL_KMOUSEM, 1);
     break;
     case WM_MBUTTONUP:
-    RGL_keycb(RGL_KMOUSEM, 0);
+    pipetokeycb(RGL_KMOUSEM, 0);
     break;
 
     default:
