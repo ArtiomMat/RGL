@@ -27,7 +27,6 @@ struct lightdata {
   vec3 offset;
   vec3 color;
 };
-
 layout(std140) uniform lightsinfo {
   lightdata lights[16];
 };
@@ -95,19 +94,25 @@ void main() {
   // vec3 L = normalize(RGL_light-in_v);
   // f_highlight = vec3(dot(in_n, L));
 
-  f_highlight = vec3(0);
-
-  for (int i = 0; i < lightsn; i++) {
-    vec3 offset = lights[i].offset;
-    offset -= body_offset;
-    offset = rotate(-body_angles, offset); // FIXME: Probably broken, the idea is though Instead of rotating the normals, the light can be rotated!
-    vec3 dst = offset-in_v;
-    vec3 L = normalize(dst); // We don't use finale since it's rotated, and if we use finale it's just a double rotation.
-    f_highlight += vec3(dot(in_n, L)) * lights[i].color;// /length(dst);
+  // If the objcet is unlit just make lighting 1
+  if ((body_flags & (1<<1)) == (1<<1)) {
+    f_highlight = vec3(1);
   }
+  else {
+    f_highlight = vec3(0);
 
-  // Finally the sun calculation
-  f_highlight += (dot(in_n, normalize(sundir))) * suncolor;
+    for (int i = 0; i < lightsn; i++) {
+      vec3 offset = lights[i].offset;
+      offset -= body_offset;
+      offset = rotate(-body_angles, offset); // FIXME: Probably broken, the idea is though Instead of rotating the normals, the light can be rotated!
+      vec3 dst = offset-in_v;
+      vec3 L = normalize(dst); // We don't use finale since it's rotated, and if we use finale it's just a double rotation.
+      f_highlight += vec3(dot(in_n, L)) * lights[i].color;// /length(dst);
+    }
+
+    // Finally the sun calculation
+    f_highlight += (dot(in_n, normalize(sundir))) * suncolor;
+  }
 
   // Shift the model by the camera's offset
   finale -= eye.offset;

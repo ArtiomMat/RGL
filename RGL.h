@@ -12,9 +12,9 @@
 enum {
   // Culling of individaul triangles is always a thing, but entire body culling is disabled by default, since maybe the body is a map.
   // Culling happens based on the body's offset to the camera, done on the CPU.
-  GL_BODYFLCULLED = 1<<0,
+  RGL_BODYFLCULLED = 1<<0,
   // Mainly useful for skyboxes, they wont be affected by lights and can safely just hover above the model.
-  GL_BODYFLUNLIT = 1<<1,
+  RGL_BODYFLUNLIT = 1<<1,
 };
 
 /*

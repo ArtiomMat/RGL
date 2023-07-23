@@ -32,43 +32,11 @@ int main() {
 
   eye = RGL_initeye(prog, 1.3);
 
-  // float vertices[] = {
-  //   // positions          // texture coords
-  //    0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-  //    0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-  //   -0.5f, -0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-  //   -0.5f,  0.5f, 0.0f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
-  //   -0.5f,  0.7f, 0.1f,  0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
-  // };
-  // UINT indices[] = {  // note that we start from 0!
-  //   0, 1, 3,   // first triangle
-  //   1, 2, 3,    // second triangle
-  //   2, 3, 4    // second triangle
-  // };  
-  // UCHAR texturedata[] = {
-  //   255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
-
-  //   255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
-
-  //   255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,    255,255,0  ,
-
-  //   255,255,0  ,    255,0  ,0  ,    255,255,0  ,    255,0  ,0  ,
-  // };
-  // UCHAR texturedata2[] = {
-  //   0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
-
-  //   0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
-
-  //   0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,
-
-  //   0  ,255,255  ,    0  ,0  ,255  ,    0  ,255,255  ,    0  ,0  ,255  ,
-  // };
-
   // RGL_MODEL model = RGL_initmodel(vertices, 5, indices, 3, texturedata, 4, 4);
   RGL_MODEL model = RGL_loadmodel("untitled.rgm",RGL_loadtexture("mori.rgt", 1));
   RGL_MODEL model2 = RGL_loadmodel("frank.rgm", RGL_loadtexture("frank.rgt", 1));
 
-  RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, 0), RGL_initbody(model, 0)};
+  RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, RGL_BODYFLUNLIT), RGL_initbody(model, 0)};
   bodies[0]->info.offset[2] += 5.5f;
   bodies[0]->info.offset[1] -= 5.5f;
   bodies[1]->info.offset[0] += 1.0f;
@@ -84,10 +52,11 @@ int main() {
   TM_initwait();
   while (1) {
     i++;
-    eye->info.angles[1] = 3.141f*((1.0f)*RGL_mousex/RGL_width-0.5f);
+    eye->info.angles[1] = 3.141f*2*((1.0f)*RGL_mousex/RGL_width-0.5f);
 
     RGL_begin();
       RGL_drawbody(bodies[0]);
+      RGL_drawbody(bodies[1]);
     RGL_end();
 
     TM_wait();
