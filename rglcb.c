@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 
-#include "RGL_loader.h"
+#include "rglcb.h"
 
 static HMODULE module;
 

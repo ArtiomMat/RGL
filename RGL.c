@@ -2,7 +2,7 @@
 
 #define RGL_SRC
 #include "RGL.h"
-#include "RGL_loader.h"
+#include "rglcb.h"
 
 #include <GL/wgl.h>
 #include <GL/wglext.h>
@@ -110,9 +110,9 @@ void RGL_freeshader(RGL_SHADER shader) {
 // Used to send all uniform information about the body to the shader
 static void uniformbody(RGL_PROGRAM program, RGL_BODY body) {
   INT i;
-  i = rglGetUniformLocation(program, "RGL_offset");
+  i = rglGetUniformLocation(program, "body_offset");
   rglUniform3f(i, body->offset[0], body->offset[1], body->offset[2]);
-  i = rglGetUniformLocation(program, "RGL_angles");
+  i = rglGetUniformLocation(program, "body_angles");
   rglUniform3f(i, body->angles[0], body->angles[1], body->angles[2]);
 }
 
@@ -212,7 +212,7 @@ static void useprogram(RGL_EYE eye) {
   calcrd_max(eye);
   rglUseProgram(eye->program);
   // Bind and copy ubo data.
-  rglBindBuffer(GL_UNIFORM_BUFFER, eye->ubo);
+  rglBindBuffer(GL_UNIFORM_BUFFER, eye->eyeubo);
   rglBufferSubData(GL_UNIFORM_BUFFER, EYEUBOBINDING, sizeof(eye->info), &eye->info);
 
   // lights
@@ -259,18 +259,9 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   eyeptr->info.p_far = 500.0f;
   eyeptr->info.p_near = 0.0001f;
   
-  // Setup the ubo that holds the eye info, which is in eyeptr->info
-  // rglUseProgram(eyeptr->program);
-  // rglGenBuffers(1, &eyeptr->ubo);
-  // rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->ubo);
-  // rglBufferData(GL_UNIFORM_BUFFER, sizeof(eyeptr->info), 0, GL_DYNAMIC_DRAW);
-  // // Actually bind the UBO to the uniform
-  // int i = rglGetUniformBlockIndex(program, "RGL_eye");
-  // rglUniformBlockBinding(program, i, 0);
-  // rglBindBufferBase(GL_UNIFORM_BUFFER, 0, eyeptr->ubo);
-  eyeptr->ubo = initubo(eyeptr->program, EYEUBOBINDING, sizeof(eyeptr->info), "RGL_eye");
-  eyeptr->lightsubo = initubo(eyeptr->program, LIGHTSUBOBINDING, sizeof(RGL_LIGHTDATA)*RGL_MAXLIGHTSN, "RGL_lights");
-  eyeptr->sunubo = initubo(eyeptr->program, SUNUBOBINDING, sizeof(eyeptr->sun), "RGL_sun");
+  eyeptr->eyeubo = initubo(eyeptr->program, EYEUBOBINDING, sizeof(eyeptr->info), "eyeinfo");
+  eyeptr->lightsubo = initubo(eyeptr->program, LIGHTSUBOBINDING, sizeof(RGL_LIGHTDATA)*RGL_MAXLIGHTSN, "lightsinfo");
+  eyeptr->sunubo = initubo(eyeptr->program, SUNUBOBINDING, sizeof(eyeptr->sun), "suninfo");
 
   zerovec(eyeptr->sun.suncolor);
   zerovec(eyeptr->sun.sundir);
@@ -330,7 +321,7 @@ int RGL_loadcolors(RGL_EYE eyeptr, const char* fp) {
   rglGenBuffers(1, &eyeptr->colorsubo);
   rglBindBuffer(GL_UNIFORM_BUFFER, eyeptr->colorsubo);
   rglBufferData(GL_UNIFORM_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-  int i = rglGetUniformBlockIndex(eyeptr->program, "RGL_palette");
+  int i = rglGetUniformBlockIndex(eyeptr->program, "colorsinfo");
   rglUniformBlockBinding(eyeptr->program, i, PALETTEUBOBINDING);
   rglBindBufferBase(GL_UNIFORM_BUFFER, PALETTEUBOBINDING, eyeptr->colorsubo);
 
@@ -345,8 +336,10 @@ void RGL_freeeye(RGL_EYE eye) {
   if (RGL_usedeye == eye)
     RGL_usedeye = NULL;
 
-  rglDeleteBuffers(1, &eye->ubo);
+  rglDeleteBuffers(1, &eye->eyeubo);
   rglDeleteBuffers(1, &eye->colorsubo);
+  rglDeleteBuffers(1, &eye->sunubo);
+  rglDeleteBuffers(1, &eye->lightsubo);
   free(eye);
 }
 

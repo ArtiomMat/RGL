@@ -3,11 +3,11 @@
 
 #version 430 core
 
-layout (location = 0) in vec3 vert;
-layout (location = 1) in vec3 normal;
-layout (location = 2) in vec2 i_texturevert;
+layout (location = 0) in vec3 in_v;
+layout (location = 1) in vec3 in_n;
+layout (location = 2) in vec2 in_t;
 
-layout(std140) uniform RGL_eye {
+layout(std140) uniform eyeinfo {
   vec3 offset;
   vec3 angles;
   float p_near;
@@ -17,7 +17,7 @@ layout(std140) uniform RGL_eye {
   float rdy_max;
 } eye;
 
-layout(std140) uniform RGL_sun {
+layout(std140) uniform suninfo {
   vec3 sundir; // DIRECTION OF THE SUUUUUUUUUUUUUUUN
   vec3 suncolor;
   int lightsn;
@@ -28,15 +28,15 @@ struct lightdata {
   vec3 color;
 };
 
-layout(std140) uniform RGL_lights {
+layout(std140) uniform lightsinfo {
   lightdata lights[16];
 };
 
-uniform vec3 RGL_offset;
-uniform vec3 RGL_angles;
+uniform vec3 body_offset;
+uniform vec3 body_angles;
 
-out vec2 texturecoord;
-out vec3 highlight;
+out vec2 f_t;
+out vec3 f_highlight;
 
 const int gridsize = 32;
 
@@ -79,39 +79,39 @@ vec3 rotate(vec3 a, vec3 p) {
 }
 
 void main() {
-  texturecoord = i_texturevert; // For the fragment shader
+  f_t = in_t; // For the fragment shader
 
   // Rotate around model(self)
-  vec3 finale = rotate(RGL_angles, vert);
-  finale += RGL_offset;
+  vec3 finale = rotate(body_angles, in_v);
+  finale += body_offset;
   
   // Calculate light stuff
   // vec3 RGL_light = vec3(-4, 4, 5.5);
-  // RGL_light -= RGL_offset;
-  // RGL_light = rotate(-RGL_angles, RGL_light);
-  // vec3 L = normalize(RGL_light-vert);
-  // highlight = vec3(dot(normal, L));
+  // RGL_light -= body_offset;
+  // RGL_light = rotate(-body_angles, RGL_light);
+  // vec3 L = normalize(RGL_light-in_v);
+  // f_highlight = vec3(dot(in_n, L));
 
-  highlight = vec3(0);
+  f_highlight = vec3(0);
 
   for (int i = 0; i < lightsn; i++) {
     vec3 offset = lights[i].offset;
-    offset -= RGL_offset;
-    offset = rotate(-RGL_angles, offset); // FIXME: Probably broken, the idea is though Instead of rotating the normals, the light can be rotated!
-    vec3 dst = offset-vert;
+    offset -= body_offset;
+    offset = rotate(-body_angles, offset); // FIXME: Probably broken, the idea is though Instead of rotating the normals, the light can be rotated!
+    vec3 dst = offset-in_v;
     vec3 L = normalize(dst); // We don't use finale since it's rotated, and if we use finale it's just a double rotation.
-    highlight += vec3(dot(normal, L)) * lights[i].color;// /length(dst);
+    f_highlight += vec3(dot(in_n, L)) * lights[i].color;// /length(dst);
   }
 
   // Finally the sun calculation
-  highlight += (dot(normal, normalize(sundir))) * suncolor;
+  f_highlight += (dot(in_n, normalize(sundir))) * suncolor;
 
   // Shift the model by the camera's offset
   finale -= eye.offset;
 
   // Eye offset is now 0,0,0, since we moved the mf, so it's just -finale
   vec3 dirtocam = normalize(-finale);
-  float edn = dot(dirtocam, normal); // Eye Dot Normal, is used to avoid rendering useless faces.
+  float edn = dot(dirtocam, in_n); // Eye Dot Normal, is used to avoid rendering useless faces.
 
   // Rotate the model around the camera
   finale = rotate(-eye.angles, finale);

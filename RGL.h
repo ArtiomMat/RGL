@@ -33,6 +33,18 @@ typedef float RGL_VEC[3];
 // A GPU object, hence you cannot modify it in your program, not without functions.
 typedef UINT RGL_TEXTURE, RGL_PROGRAM, RGL_SHADER, RGL_COLORS;
 
+typedef struct {
+  UINT p; // OpenGL program object
+
+  UINT body_offsetu;
+  UINT body_anglesu;
+
+  UINT eyeubo; // What contains shader information about the camera
+  UINT colorsubo; // Contains color information about the palette
+  UINT lightsubo;
+  UINT sunubo;
+} RGL_PROGRAMDATA;
+
 enum {
   RGL_VERTEXSHADER,
   RGL_FRAGMENTSHADER,
@@ -83,7 +95,7 @@ typedef struct {
   RGL_LIGHT lights[RGL_MAXLIGHTSN];
   float fov;
   RGL_PROGRAM program;
-  UINT ubo; // What contains shader information about the camera
+  UINT eyeubo; // What contains shader information about the camera
   UINT colorsubo; // Contains color information about the palette
   UINT lightsubo;
   UINT sunubo;
