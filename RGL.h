@@ -132,14 +132,19 @@ enum {
   RGL_KLEFT,
 };
 
+enum {
+  RGL_MMOUSE, // x and y are the delta of the mouse.
+};
+
 EXTERN UINT RGL_width, RGL_height;
 
-EXTERN UINT RGL_mousex, RGL_mousey;
+EXTERN int RGL_mousex, RGL_mousey;
 
 EXTERN RGL_EYE RGL_usedeye;
 
 // Keep in mind that RGL will send down signals even if the key was not pressed this frame, but is still held down, this is not very useful as WinAPI for example has a pause in these cases and the behaviour is not very useful, so it's better to have logic in your program that ignores additional down signals until an up signal, and repeat.
 EXTERN void (*RGL_keycb) (int key, int down);
+EXTERN void (*RGL_movecb) (int what, int x, int y);
 
 // General RGL
 // I don't recommend using frame capping if you vsync.
@@ -196,6 +201,7 @@ RGL_MODEL RGL_initmodel(float* vbodata, UINT verticesn, UINT* fbodata, UINT face
 // You can set program to 0 for the default retro program.
 RGL_MODEL RGL_loadmodel(const char* fp,  RGL_TEXTURE texture);
 void RGL_freemodel(RGL_MODEL model);
+
 // RGL_BODY
 RGL_BODY RGL_initbody(RGL_MODEL model, int flags);
 void RGL_freebody(RGL_BODY body);

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <windows.h>
 #include "TM.h"
 
@@ -24,6 +25,7 @@ ULONG TM_init(UCHAR GameFPS) {
 	NtQueryTimerResolution(&MinSleepRes, &DefaultSleepRes, &DefaultSleepRes);
 	DefaultSleepRes /= 10000;
 
+	printf("TM: Time Manager initialized. Sleep resolution is %ld.\n", DefaultSleepRes);
 	return DefaultSleepRes;
 }
 

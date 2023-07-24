@@ -60,22 +60,20 @@ float normalize_d(float d, float rd_max) {
 vec3 rotate(vec3 a, vec3 p) {
   vec3 ret;
   
-  // Around X
-  ret.x = p.x;
-  ret.y = p.y * cos(a.x) - p.z * sin(a.x);
-  ret.z = p.y * sin(a.x) + p.z * cos(a.x);
+  // Around Z
+  ret.x = p.x * cos(a.z) - p.y * sin(a.z);
+  ret.y = p.x * sin(a.z) + p.y * cos(a.z);
 
   // Around Y
   p.x = ret.x;
-  p.z = ret.z;
   ret.x = p.x * cos(a.y) + p.z * sin(a.y);
   ret.z = -p.x * sin(a.y) + p.z * cos(a.y);
 
-  // Around Z
-  p.x = ret.x;
+  // Around X
+  p.z = ret.z;
   p.y = ret.y;
-  ret.x = p.x * cos(a.z) - p.y * sin(a.z);
-  ret.y = p.x * sin(a.z) + p.y * cos(a.z);
+  ret.y = p.y * cos(a.x) - p.z * sin(a.x);
+  ret.z = p.y * sin(a.x) + p.z * cos(a.x);
 
   return ret;
 }

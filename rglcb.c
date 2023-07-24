@@ -20,13 +20,13 @@ void RGL_loadgl() {
   module = LoadLibraryA("opengl32.dll");
 
   if (!module){
-    puts("FATAL: RGL failed to load opengl32.dll.");
+    puts("RGL FATAL: RGL failed to load opengl32.dll.");
     exit(1);
   }
 
   rglCreateShader = load("glCreateShader");
   if (!rglCreateShader) {
-    puts("FATAL: Loading OpenGL functions failed.");
+    puts("RGL FATAL: Loading OpenGL functions failed.");
     exit(1);
   }
   rglShaderSource = load("glShaderSource");

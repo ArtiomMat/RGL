@@ -466,11 +466,12 @@ static void pipetokeycb(int key, int down) {
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  static int recenteredcursor = 0;
   switch (uMsg) {
     // Using this for Wine compatability. other shit wont work.
     case WM_SYSCOMMAND:
     if (wParam == SC_CLOSE)
-      RGL_keycb(RGL_KWINDOWEXIT, 1);
+      pipetokeycb(RGL_KWINDOWEXIT, 1);
     else
       return DefWindowProc(hWnd, uMsg, wParam, lParam);
     break;
@@ -480,6 +481,29 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
       // Extract the mouse coordinates from the lParam parameter
       RGL_mousex = LOWORD(lParam);
       RGL_mousey = HIWORD(lParam);
+
+      if (cursorcaptured) {
+        if (!recenteredcursor) {    
+          RECT clientRect;
+          GetClientRect(hWnd, &clientRect);
+
+          POINT topleft = { clientRect.left, clientRect.top };
+
+          // Convert client area coordinates to screen coordinates
+          ClientToScreen(hWnd, &topleft);
+
+          recenteredcursor = 1;
+          if (RGL_movecb) {
+            RGL_movecb(RGL_MMOUSE, RGL_mousex-RGL_width/2, RGL_mousey-RGL_height/2);
+            
+          }
+          SetCursorPos(topleft.x + RGL_width/2, topleft.y + RGL_height/2);
+        }
+        else
+          recenteredcursor = 0;
+      }
+      else
+        recenteredcursor = 0;
       break;
     }
 
@@ -561,18 +585,38 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
   return 0; // Message handled.
 }
 
+static void GetClientRectOnScreen(HWND hWnd, RECT* clientRect)
+{
+  GetClientRect(hWnd, clientRect);
+
+  POINT topLeft = { clientRect->left, clientRect->top };
+  POINT bottomRight = { clientRect->right, clientRect->bottom };
+
+  // Convert client area coordinates to screen coordinates
+  ClientToScreen(hWnd, &topLeft);
+  ClientToScreen(hWnd, &bottomRight);
+
+  // Update the clientRect with the screen coordinates
+  clientRect->left = topLeft.x;
+  clientRect->top = topLeft.y;
+  clientRect->right = bottomRight.x;
+  clientRect->bottom = bottomRight.y;
+}
+
 void RGL_setcursor(char captured) {
+  cursorcaptured = captured;
   if (captured) {
-    cursorcaptured = captured;
     RECT rect;
-    GetClientRect(hWnd, &rect);
+    GetClientRectOnScreen(hWnd, &rect);
 
     // Lock the cursor within the window's client area
-    ClipCursor(&rect);
+    if (!ClipCursor(&rect))
+      printf("FUCK\n");
   }
   else {
     ClipCursor(0);
   }
+
   ShowCursor(!captured);
 }
 
@@ -582,7 +626,8 @@ int RGL_init(UCHAR vsync, int width, int height) {
   RGL_width = width;
   RGL_height = height;
   RGL_usedeye = 0;
-  RGL_keycb = 0;
+  RGL_keycb  = 0;
+  RGL_movecb = 0;
 
   // Create the class
   WNDCLASSEX wc = {0};
@@ -671,10 +716,14 @@ int RGL_init(UCHAR vsync, int width, int height) {
   else
     puts("RGL: Could not load glSwapInterval, so can't VSync.");
 
-  printf("RGL: Successful initialization.\nRGL: Using OpenGL %s.\n", glGetString(GL_VERSION));
+  printf("RGL: Retro Graphics Library initialized. Using OpenGL %s.\n", glGetString(GL_VERSION));
 
   // Some basic OpenGL setup.
   glEnable(GL_DEPTH_TEST);
+
+  // Only way to make RGL_setcursor to work after initialization
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  RGL_end();
 
   return 1;
 }
