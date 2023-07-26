@@ -1,7 +1,8 @@
 {
   "files.associations": {
     "*.h": "c",
-    "compare": "c"
+    "compare": "c",
+    "typeinfo": "c"
   },
   "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }

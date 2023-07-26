@@ -28,21 +28,23 @@ void rglkeycb(int key, int down) {
 }
 
 void rglmovecb(int what, int x, int y) {
-  eye->info.angles[1] += x*0.001f;
-  eye->info.angles[0] += y*0.001f;
+  eye->info.angles[1] += x*0.0015f;
+  eye->info.angles[0] += y*0.0015f;
 }
 
 int main() {
   UTL_Init();
+  // UTL_MessageBox("Memento Mori question", "Hello", UTL_MBYesNoCancel);
   TM_init(30);
-  RGL_init(0, 1200, 900);
+  if (!RGL_init(0, 320, 200))
+    return 1;
   RGL_settitle("Momento Mori");
 
   RGL_keycb = rglkeycb;
   RGL_movecb = rglmovecb;
   
-  RGL_SHADER vert = RGL_loadshader(UTL_RelPath("RGL/vertex.glsl"), RGL_VERTEXSHADER);
-  RGL_SHADER frag = RGL_loadshader(UTL_RelPath("RGL/fragment.glsl"), RGL_FRAGMENTSHADER);
+  RGL_SHADER vert = RGL_loadshader(UTL_RelPath("RGL/eye_v.glsl"), RGL_VERTEXSHADER);
+  RGL_SHADER frag = RGL_loadshader(UTL_RelPath("RGL/eye_f.glsl"), RGL_FRAGMENTSHADER);
 
   RGL_PROGRAM prog = RGL_initprogram(vert, frag);
   RGL_loadcolors(prog, UTL_RelPath("RGL/cranes.rgc"));
@@ -82,8 +84,9 @@ int main() {
     i++;
 
     RGL_begin();
-      RGL_drawbody(bodies[0]);
       RGL_drawbody(bodies[1]);
+      RGL_resetdepth();
+      RGL_drawbody(bodies[0]);
     RGL_end();
 
     TM_wait();

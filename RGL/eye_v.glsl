@@ -37,6 +37,7 @@ layout(std140) uniform bodyinfo {
   int body_flags;
 };
 
+out float f_depth;
 out vec2 f_t;
 out vec3 f_highlight;
 
@@ -105,7 +106,8 @@ void main() {
       offset = rotate(-body_angles, offset); // FIXME: Probably broken, the idea is though Instead of rotating the normals, the light can be rotated!
       vec3 dst = offset-in_v;
       vec3 L = normalize(dst); // We don't use finale since it's rotated, and if we use finale it's just a double rotation.
-      f_highlight += vec3(dot(in_n, L)) * lights[i].color;// /length(dst);
+      float len = length(dst);
+      f_highlight += vec3(dot(in_n, L)) * lights[i].color / (len*len);
     }
 
     // Finally the sun calculation
@@ -130,9 +132,11 @@ void main() {
   float depth;
   if (edn < 0) // edn is only part of the whole face culling system.
     depth = 2;
-  else
+  else {
     depth = 2*(finale.z-eye.p_near)/(eye.p_far-eye.p_near)-1; // Depth is just normalized z
-  
+    f_depth = depth;
+  }
+
   float dx = getd(finale.z, finale.x);
   float dy = getd(finale.z, finale.y);
   gl_Position = vec4(normalize_d(dx, eye.rdx_max), normalize_d(dy, eye.rdy_max), depth, 1.0);

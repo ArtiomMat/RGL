@@ -94,6 +94,14 @@ typedef struct {
   UINT vbo; // vertex buffer object
   UINT fbo; // face/element buffer object
   UINT facesn;
+  struct RGL_ANIMATION {
+    struct RGL_FRAME {
+      UINT index; // Index of the vertex buffer
+      UINT time; // In ms
+    }* frames;
+    UINT framesn;
+  }* animations;
+  UINT animationsn;
 } RGL_MODELDATA, *RGL_MODEL;
 
 // Just like a model, it is stored in RAM so it can be played around with via CPU.
@@ -152,6 +160,8 @@ int RGL_init(UCHAR vsync, int width, int height);
 void RGL_settitle(const char* title);
 void RGL_setcursor(char captured);
 void RGL_begin();
+// This can be used to have multiple layers of rendering. Intention is for GUI, or viewmodels.
+void RGL_resetdepth();
 void RGL_drawbody(RGL_BODY body);
 // Note, for drawing you must create a eye, optionally if you create multiple eyes, you can change RGL_usedeye, but the first eye you create is set automatically.
 void RGL_drawbodies(RGL_BODY* bodies, UINT _i, UINT n);
@@ -204,4 +214,6 @@ void RGL_freemodel(RGL_MODEL model);
 
 // RGL_BODY
 RGL_BODY RGL_initbody(RGL_MODEL model, int flags);
+// Plays animation i at moment m.
+void RGL_play(RGL_BODY body, UINT i, UINT m);
 void RGL_freebody(RGL_BODY body);

@@ -1,5 +1,7 @@
 #pragma once
 
+// I yoinked it from an old AVE version.
+
 typedef unsigned long long ULONGLONG;
 typedef unsigned int UINT;
 typedef unsigned short USHORT;
@@ -9,7 +11,6 @@ typedef struct {
 	ULONGLONG* Data;
 	UINT N, MemN;
 } UTL_LLIST;
-
 
 enum {
 	UTL_MBYesNo,
@@ -103,7 +104,7 @@ ULONGLONG UTL_OBigE64(ULONGLONG X);
 UINT UTL_OBigE32(UINT X);
 USHORT UTL_OBigE16(USHORT X);
 
-// 0 = no, 1 = yes, 2 = cancel
+// 0 = no, 1 = yes, 2 = ok, 3 = cancel
 int UTL_MessageBox(const char* Title, const char* Desc, int Type);
 
 int UTL_FileExits(const char* FP);

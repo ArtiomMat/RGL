@@ -281,7 +281,7 @@ RGL_EYE RGL_initeye(RGL_PROGRAM program, float fov) {
   // eyeptr->info.offset[2] = -10;
   zerovec(eyeptr->info.angles);
   eyeptr->fov = fov;
-  eyeptr->info.p_far = 500.0f;
+  eyeptr->info.p_far = 10.0f;
   eyeptr->info.p_near = 0.0001f;
 
   zerovec(eyeptr->sun.suncolor);
@@ -730,6 +730,10 @@ int RGL_init(UCHAR vsync, int width, int height) {
 
 void RGL_settitle(const char* title) {
   SetWindowTextA(hWnd, title);
+}
+
+void RGL_resetdepth() {
+  glClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void RGL_begin() {

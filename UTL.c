@@ -131,30 +131,32 @@ int UTL_SimRead(UTL_CBUF* B, int N) {
 }
 
 int UTL_MessageBox(const char* Title, const char* Desc, int Type) {
-	// UINT uType;
-	// switch (Type) {
-	// 	case UTL_MBYesNoCancel:
-	// 	uType = MB_YESNOCANCEL | MB_ICONQUESTION;
-	// 	break;
-	// 	case UTL_MBOk:
-	// 	uType = MB_OK | MB_ICONEXCLAMATION;
-	// 	break;
-	// 	case UTL_MBOkCancel:
-	// 	uType = MB_OKCANCEL | MB_ICONINFORMATION;
-	// 	break;
-	// 	default:
-	// 	uType = MB_YESNO | MB_ICONQUESTION;
-	// 	break;
-	// }
-	int Answer = MessageBox(NULL, Desc, Title, MB_OKCANCEL | MB_ICONINFORMATION);
+	UINT uType;
+	switch (Type) {
+		case UTL_MBYesNoCancel:
+		uType = MB_YESNOCANCEL;
+		break;
+		case UTL_MBOk:
+		uType = MB_OK;
+		break;
+		case UTL_MBOkCancel:
+		uType = MB_OKCANCEL;
+		break;
+		default:
+		uType = MB_YESNO;
+		break;
+	}
+	int Answer = MessageBox(NULL, Desc, Title, uType);
 	
 	switch (Answer) {
+		case IDOK:
+		return 2;
 		case IDYES:
 		return 1;
 		case IDNO:
 		return 0;
 		default:
-		return 2;
+		return 3;
 	}
 }
 
