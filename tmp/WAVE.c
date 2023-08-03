@@ -113,7 +113,7 @@ int WAVE_init(int worstfps, int samplerate) {
   r = pClient->lpVtbl->Start(pClient);
 	CHECKR("Could not start the audio stream.");
 
-  uiframesbuffer = malloc(sizeof(UINT) * framesbuffersize);
+  uiframesbuffer = malloc(sizeof(UINT) * framesbuffersize * 2);
 
   printf(
     "WAVE: Waves Audio library initialized. Frames buffer size is %d.\n"
@@ -136,8 +136,8 @@ void WAVE_begin() {
   pRenderClient->lpVtbl->GetBuffer(pRenderClient, writeframesn, (BYTE**)&framesbuffer);
   
   // Clear the to-be played buffer.
-  // for (int i = 0; i < writeframesn*2; i++)
-  //   uiframesbuffer[i] = 0;
+  for (int i = 0; i < writeframesn*2; i++)
+    uiframesbuffer[i] = 0;
 }
 
 int j = 0;
@@ -148,6 +148,13 @@ void WAVE_end() {
     volume = WAVE_usedears->volume;
   else
     volume = 0.5f;
+
+  for (int i =0; i < writeframesn *2; i++) {
+    short* frameptr = (short*)framesbuffer;
+    short value = (short)uiframesbuffer[i];
+    value /= 5;
+    frameptr[i] = value;
+  }
 
   pRenderClient->lpVtbl->ReleaseBuffer(pRenderClient, writeframesn, 0);
 }
@@ -169,15 +176,14 @@ void WAVE_playmusic(WAVE_SOURCE source) {
 
     switch (bytespersample) {
       case 2:
-      USHORT* audiosampleptr = source->audio->samples;
-      USHORT* frameptr = (USHORT*)framesbuffer;
+      short* audiosampleptr = source->audio->samples;
       // += it as a USHORT* now, not as void*
       audiosampleptr += source->si * source->audio->channelsn;
       int index = 0;
-      frameptr[si+0] += audiosampleptr[index] * source->volume;
+      uiframesbuffer[si+0] += audiosampleptr[index] * source->volume;
       if (source->audio->channelsn==2)
         index++;
-      frameptr[si+1] += audiosampleptr[index] * source->volume;
+      uiframesbuffer[si+1] += audiosampleptr[index] * source->volume;
       break;
 
       case 1:
