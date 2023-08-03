@@ -1,7 +1,8 @@
-// x86_64-w64-mingw32-gcc -ggdb -o waves WAVE.c -lmmdevapi -lole32
+// x86_64-w64-mingw32-gcc -ggdb -o waves WAVE.c ../UTL.c -lmmdevapi -lole32 -lshlwapi
 
 // pipewire-pulseaudio-0.3.76-1.fc37.x86_64 was removed, maybe will ruin stuff?
 
+#define WAVE_SRC
 #include "WAVE.h"
 
 #include <stdio.h>
@@ -40,10 +41,13 @@ static UINT32 framesbuffersize;
 static UINT* uiframesbuffer;
 
 static int bytespersample;
+static int samplerate;
+static int channelsn;
 
 #define CHECKR(msgstr) if (FAILED(r)) {puts("WAVE: " msgstr); fflush(stdout); return 0;}
 
 int WAVE_init(int worstfps, int samplerate) {
+  WAVE_usedears = 0;
   HRESULT r;
 
   r = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
@@ -83,12 +87,14 @@ int WAVE_init(int worstfps, int samplerate) {
   waveFormat.cbSize = pDefaultWaveFormat->cbSize;
 
   bytespersample = waveFormat.wBitsPerSample / 8;
+  channelsn = waveFormat.nChannels;
+  samplerate = waveFormat.nSamplesPerSec;
   
   int framebuffertime = 10000000/worstfps;
   r = pClient->lpVtbl->Initialize(
     pClient, // This
     AUDCLNT_SHAREMODE_SHARED, 
-    0, // AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, 
+    AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, 
     framebuffertime, 0, &waveFormat, NULL
   );
   CHECKR("Could not initialize the client.");
@@ -109,14 +115,17 @@ int WAVE_init(int worstfps, int samplerate) {
 
   uiframesbuffer = malloc(sizeof(UINT) * framesbuffersize);
 
-  printf("WAVE: Waves Audio library initialized. Frames buffer size is %d.", framesbuffersize);
+  printf(
+    "WAVE: Waves Audio library initialized. Frames buffer size is %d.\n"
+    "WAVE: channels %d, rate %d, bps %d.\n", 
+    framesbuffersize, channelsn, samplerate, bytespersample*8
+  );
 
-  return 0;
+  return 1;
 }
 
-static int writeframesn;
+static UINT writeframesn;
 static BYTE* framesbuffer;
-static int audiosplayedn;
 
 void WAVE_begin() {
   UINT padding;
@@ -127,33 +136,55 @@ void WAVE_begin() {
   pRenderClient->lpVtbl->GetBuffer(pRenderClient, writeframesn, (BYTE**)&framesbuffer);
   
   // Clear the to-be played buffer.
-  for (int i = 0; i < writeframesn; i++)
-    uiframesbuffer[i] = 0;
+  // for (int i = 0; i < writeframesn*2; i++)
+  //   uiframesbuffer[i] = 0;
 }
 
+int j = 0;
+
 void WAVE_end() {
-  for (int i = 0; i < writeframesn; i++) {
-    framesbuffer[i] = WAVE_usedears->volume * uiframesbuffer[i] / audiosplayedn;
-  }
+  float volume;
+  if (WAVE_usedears)
+    volume = WAVE_usedears->volume;
+  else
+    volume = 0.5f;
+
   pRenderClient->lpVtbl->ReleaseBuffer(pRenderClient, writeframesn, 0);
 }
 
 void WAVE_playmusic(WAVE_SOURCE source) {
-  for (int si = 0; si < writeframesn * 2; si+=2, source->si+=2) {
-      if (source->si )
-      switch (bytespersample) {
-        case 2:
-        USHORT* audiosampleptr = source->audio->samples;
-        uiframesbuffer[si+0] += audiosampleptr[source->si+0] * source->volume;
-        uiframesbuffer[si+1] += audiosampleptr[source->si+1] * source->volume;
-        break;
-        case 1:
-        UCHAR* framesbuffer2 = framesbuffer;
-        UCHAR* framesbuffer2 = framesbuffer;
-        break;
+  if (!source->audio)
+    return;
+  if (source->fl_stop)
+    return;
+  
+  for (UINT si = 0; si < writeframesn * 2; si+=2, source->si++) {
+    if (source->audio->samplesn <= source->si) {
+      source->si = 0; // Public incase a smartass tries to just fl_stop=0
+      if (!source->fl_loop) {
+        source->fl_stop = 1;
+        return;
       }
+    }
+
+    switch (bytespersample) {
+      case 2:
+      USHORT* audiosampleptr = source->audio->samples;
+      USHORT* frameptr = (USHORT*)framesbuffer;
+      // += it as a USHORT* now, not as void*
+      audiosampleptr += source->si * source->audio->channelsn;
+      int index = 0;
+      frameptr[si+0] += audiosampleptr[index] * source->volume;
+      if (source->audio->channelsn==2)
+        index++;
+      frameptr[si+1] += audiosampleptr[index] * source->volume;
+      break;
+
+      case 1:
+      return; // TODO: 8 bits per sample case when playing.
+      break;
+    }
   }
-  audiosplayedn++;
 }
 
 void WAVE_free() {
@@ -171,16 +202,26 @@ void WAVE_free() {
 
 WAVE_AUDIO WAVE_loadaudio(const char* fp) {
   FILE* f = fopen(fp, "rb");
+  
+  // Test the RIFF
+  char riff[4];
+  fread(riff, 4, 1, f);
+  if (memcmp("RIFF", riff, 4)) {
+		printf("WAVE: The file '%s' is not a WAV file.\n", fp);
+    fclose(f);
+    return 0;
+  }
+
 	// NOTE: We already read the "RIFF" part.
 	// Skipping: Size in bytes + Wave marker + Fmt marker + Fmt header length
 	fseek(f, 4+4+4+4, SEEK_CUR);
-	
+
 	USHORT format;
 	fread(&format, 2, 1, f);
 	UTL_ILilE16(&format);
 	// Not PCM?
 	if (format != 1) {
-		printf("WAVE: Could not recognize format of '%f.");
+		printf("WAVE: Could not recognize format of '%s'.\n", fp);
     fclose(f);
 		return 0;
 	}
@@ -199,32 +240,71 @@ WAVE_AUDIO WAVE_loadaudio(const char* fp) {
 	USHORT loadedbps;
 	fread(&loadedbps, 2, 1, f);
 	UTL_ILilE16(&loadedbps);
+  if (loadedbps/8 != bytespersample) {
+		printf("WAVE: BPS of the audio file '%s' don't match with the bps we have.\n", fp);
+    fclose(f);
+		return 0;
+  }
 
-	// Skipping: Data marker
-	fseek(f, 4, SEEK_CUR);
+	// Skipping: Data marker or List chunk if present
+  fread(riff, 4, 1, f);
+  if (!memcmp("LIST", riff, 4)) {
+    UINT i;
+    fread(&i, 4, 1, f);
+    fseek(f, i+4, SEEK_CUR);
+  }
 
 	UINT datasize;
 	fread(&datasize, 4, 1, f);
 	UTL_ILilE32(&datasize);
 
 	UINT samplesn = datasize / (channelsn * loadedbps/8);
-	UCHAR* samples = malloc(samplesn);
+
+  WAVE_AUDIO audio = malloc(sizeof(WAVE_AUDIO));
+
+  audio->channelsn = channelsn;
+  audio->samplesn = samplesn;
+  audio->samplerate = samplerate;
+  audio->bytespersample = loadedbps/8;
+	audio->samples = malloc(datasize);
+  printf("channels %d, rate %d, bps %d\n", channelsn, samplerate, loadedbps);
 
 	// TODO: Convert shit if needed to.
-	fread(samples, 1, samplesn, f);
-
+	fread(audio->samples, datasize, 1, f);
   fclose(f);
 
-	return ;
+	return audio;
+}
+
+WAVE_SOURCE WAVE_initsource() {
+  WAVE_SOURCE source = calloc(sizeof(WAVE_SOURCE), 1);
+  // .0f != 0 I think...
+  QM_setv(0, source->offset);
+  source->volume = 1.0f;
+
+  return source;
+}
+
+void WAVE_setsource(WAVE_SOURCE source, WAVE_AUDIO audio) {
+  source->audio = audio;
+  source->fl_stop = 0; // If it was stop let's unstop the mf
+  source->si = 0;
 }
 
 int main() {
+  // QM_init(256);
+  UTL_Init();
   if (!WAVE_init(6, 0))
     return 1;
-  printf("OK\n");
-  fflush(stdout);
+  
+  WAVE_AUDIO musicaudio = WAVE_loadaudio("HIDE.wav");
+
+  WAVE_SOURCE musicsource = WAVE_initsource();
+  WAVE_setsource(musicsource, musicaudio);
+
   while (1) {
     WAVE_begin();
+      WAVE_playmusic(musicsource);
     WAVE_end();
     Sleep(16);
   }

@@ -62,15 +62,15 @@ float QM_sin(float x) {
   return -ret;
 }
 
-int main() {
-  QM_init(256);
+// int main() {
+//   QM_init(256);
 
-  float x = 0;
-  for (unsigned i = 0; i < 99999999; i++) {
-    float y = (rand()%1000000)/1000.0f;
-    float res = sinf(y);
-    x += res;
-  }
-  printf("%f\n", x);
-  return 0;
-}
+//   float x = 0;
+//   for (unsigned i = 0; i < 99999999; i++) {
+//     float y = (rand()%1000000)/1000.0f;
+//     float res = sinf(y);
+//     x += res;
+//   }
+//   printf("%f\n", x);
+//   return 0;
+// }

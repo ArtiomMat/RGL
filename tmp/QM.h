@@ -27,7 +27,7 @@ QM_INLINE float QM_cos(float x) {
 }
 float QM_tan(float x);
 
-QM_INLINE void QM_setv(float what, QM_V out) {
+QM_INLINE void QM_setv(float what, float* out) {
   out[0] = what;
   out[1] = what;
   out[2] = what;

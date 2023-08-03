@@ -11,24 +11,22 @@
   #define EXTERN extern
 #endif
 
-enum {
-  WAVE_AFPLAY,
-  WAVE_AFREWIND,
-  WAVE_AFLOOP,
-};
-
 typedef struct {
-  UINT samplesn; // Does not depend on channels, it's a sample
-  UCHAR* samples;
+  UINT samplesn; // Samples per channel
+  UCHAR channelsn; // How many channels per frame
+  UCHAR bytespersample;
+  USHORT samplerate; // The rate of samples PER CHANNEL, not total samples. a better name is framerate, but, terminology I guess.
+  void* samples; // The frames flattened into a raw sample array.
 } WAVE_AUDIODATA, *WAVE_AUDIO;
 
 typedef struct {
   QM_V offset;
-  UINT si; // Sample index
+  UINT si; // Sample index(per channel)
   WAVE_AUDIO audio;
   // If we assume the ear hears in a 1.0f volume, setting the volume of a source to 1.0f means the speaker will play at the volume of the entire system. but by default ears are set to 0.5f, so it's fine :)
   float volume;
-  int status;
+  int fl_loop: 1; // Loop the source when it reaches end.
+  int fl_stop: 1; // Ignore play, don't play at all right now.
 } WAVE_SOURCEDATA, *WAVE_SOURCE;
 
 typedef struct {
@@ -46,6 +44,7 @@ EXTERN WAVE_EARS WAVE_usedears;
 int WAVE_init(int worstfps, int samplerate);
 void WAVE_begin();
 // Like playsource but works with music and stuff, the offset is relative to just 0,0,0 not the used ears.
+// If source reaches end of audio, then if fl_loop is 1 we just go back to the beginning, otherwise fl_stop is set to 1, which blocks the audio from playing.
 void WAVE_playmusic(WAVE_SOURCE source);
 void WAVE_playsource(WAVE_SOURCE source);
 void WAVE_end();
@@ -55,10 +54,6 @@ void WAVE_free();
 WAVE_AUDIO WAVE_loadaudio(const char* fp);
 WAVE_AUDIO WAVE_freeaudio(WAVE_AUDIO audio);
 
-WAVE_SOURCE WAVE_initsource(WAVE_SOURCE source, int audiosn);
-void WAVE_setaudio(WAVE_SOURCE source, int index, WAVE_AUDIO audio);
-void WAVE_setaudioflag(WAVE_SOURCE source, int index, int flags);
-// Remove flag
-void WAVE_remaudioflags(WAVE_SOURCE source, int index, int flags);
-void WAVE_setvolume(WAVE_SOURCE source, int index, float volume);
+WAVE_SOURCE WAVE_initsource();
+void WAVE_setsource(WAVE_SOURCE source, WAVE_AUDIO audio);
 void WAVE_freesource(WAVE_SOURCE source);
