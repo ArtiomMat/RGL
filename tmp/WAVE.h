@@ -31,7 +31,7 @@ typedef struct {
 
 typedef struct {
   QM_V offset;
-  QM_V angles;
+  QM_V angles; // Note it's in radians
   // Set to 0.5f, which essentially plays sounds it half their strength. Each individual time you play some sound or source it is multiplied by this value in realtime.
   float volume;
 } WAVE_EARSDATA, *WAVE_EARS;
@@ -46,6 +46,7 @@ void WAVE_begin();
 // Like playsource but works with music and stuff, the offset is relative to just 0,0,0 not the used ears.
 // If source reaches end of audio, then if fl_loop is 1 we just go back to the beginning, otherwise fl_stop is set to 1, which blocks the audio from playing.
 void WAVE_playmusic(WAVE_SOURCE source);
+// playmusic but uses WAVE_usedears to play the sound as if you hear it (O.o)
 void WAVE_playsource(WAVE_SOURCE source);
 void WAVE_end();
 void WAVE_free();

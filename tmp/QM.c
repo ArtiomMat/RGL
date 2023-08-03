@@ -40,18 +40,6 @@ float QM_rsqrt(float x) {
   return y;
 }
 
-// Approximation of 0-PI in sin(x).
-inline float sinpeak(float x) {
-  const float a = -0.41f;
-  const float b = 1.29f;
-  const float c = -0.03f;
-  return x*(a*x + b) + c;
-}
-
-inline float cospeak(float x) {
-  return -0.41f*x*x + 1;
-}
-
 float QM_sin(float x) {
   x /= QM_PI*2; // Makes 2pi radians(full cycle) into 1 unit.
   int i = abs(sintablesize*x);
@@ -62,15 +50,15 @@ float QM_sin(float x) {
   return -ret;
 }
 
-// int main() {
-//   QM_init(256);
+int main() {
+  QM_init(256);
 
-//   float x = 0;
-//   for (unsigned i = 0; i < 99999999; i++) {
-//     float y = (rand()%1000000)/1000.0f;
-//     float res = sinf(y);
-//     x += res;
-//   }
-//   printf("%f\n", x);
-//   return 0;
-// }
+  float x = 0;
+  for (unsigned i = 0; i < 99999999; i++) {
+    float y = (rand()%1000000)/1000.0f;
+    float res = sinf(y);
+    x += res;
+  }
+  printf("%f\n", x);
+  return 0;
+}
