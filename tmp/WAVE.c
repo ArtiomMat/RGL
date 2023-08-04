@@ -14,9 +14,7 @@
 #include <audioclient.h>
 #include <uuids.h>
 
-#define DEFAULT_RATE 11025
-// WARNING: If this is changed we must change the data type used for the buffer in ave_snd_PlayFrame()
-#define DEFAULT_BYTE_DEPTH 1
+#define DEFAULT_RATE 11025 // Currently unused...
 
 // Either headers are broken for Windows & Linux or just Linux.
 #undef DEFINE_GUID
@@ -38,20 +36,18 @@ static IAudioRenderClient* pRenderClient;
 
 // The size of the buffer used to store audio frames(Frame=audio data at a point in time)
 static UINT32 framesbuffersize;
-
-static UINT bytespersample;
-static UINT samplerate;
-static UINT channelsn;
+static UINT usedsamplerate;
 
 #define CHECKR(msgstr) if (FAILED(r)) {puts("WAVE: " msgstr); fflush(stdout); return 0;}
 
-int WAVE_init(int worstfps, int samplerate) {
+int WAVE_init(int worstfps, int _samplerate) {
   WAVE_usedears = 0;
   HRESULT r;
-
-  r = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+  
+  // r = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+  r = CoInitialize(NULL);
   CHECKR("Could not initialize COM.");
-
+  
   r = CoCreateInstance(
     &CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
     &IID_IMMDeviceEnumerator, (void**)&pEnumerator
@@ -76,19 +72,15 @@ int WAVE_init(int worstfps, int samplerate) {
   WAVEFORMATEX waveFormat = {0};
   waveFormat.wFormatTag = WAVE_FORMAT_PCM;
   waveFormat.nChannels = 2;
-  if (samplerate)
-    waveFormat.nSamplesPerSec = samplerate;
-  else
-    waveFormat.nSamplesPerSec = pDefaultWaveFormat->nSamplesPerSec;
   waveFormat.wBitsPerSample = 16; // Stutters and shifts the audio of the entire os if bps don't match up(specifically when I did 8 instead of 16). The default wave format(atleast for me) has 32 bps, which apparantly does not work with WAVE_FORMAT_PCM(1)? the format that works is WAVE_FORMAT_EXTENSIBLE(65534), no idea what it even is, don't wanna know, just gonna keep it like this and hope for the best.
+  if (_samplerate)
+    usedsamplerate = waveFormat.nSamplesPerSec = _samplerate;
+  else
+    usedsamplerate = waveFormat.nSamplesPerSec = pDefaultWaveFormat->nSamplesPerSec;
   waveFormat.nBlockAlign = (waveFormat.nChannels * waveFormat.wBitsPerSample) / 8;
   waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
   waveFormat.cbSize = 0;
 
-  bytespersample = waveFormat.wBitsPerSample / 8;
-  channelsn = waveFormat.nChannels;
-  samplerate = waveFormat.nSamplesPerSec;
-  
   int framebuffertime = 10000000/worstfps;
   r = pClient->lpVtbl->Initialize(
     pClient, // This
@@ -96,7 +88,7 @@ int WAVE_init(int worstfps, int samplerate) {
     AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, 
     framebuffertime, 0, &waveFormat, NULL
   );
-  CHECKR("Could not initialize the client.");
+  CHECKR("Could not initialize the client. WAVE uses 16 bits per sample, if your device doesn't support this you will need WAVE8 patch(under development).");
 
   (void)pClient->lpVtbl->GetBufferSize(
     pClient, // This 
@@ -113,42 +105,29 @@ int WAVE_init(int worstfps, int samplerate) {
 	CHECKR("Could not start the audio stream.");
 
   printf(
-    "WAVE: Waves Audio library initialized. Frames buffer size is %d.\n", 
-    framesbuffersize, channelsn, samplerate, bytespersample*8
+    "WAVE: Waves Audio module initialized. Frames buffer size is %d.\n", 
+    framesbuffersize
   );
 
   return 1;
 }
 
 static UINT writeframesn;
-static BYTE* framesbuffer;
+static short* framesbuffer;
 
 void WAVE_begin() {
   UINT32 padding;
 
   pClient->lpVtbl->GetCurrentPadding(pClient, &padding);
+  if (!padding)
+    puts("Bruh, no padding");
   writeframesn = framesbuffersize - padding;
 
   pRenderClient->lpVtbl->GetBuffer(pRenderClient, writeframesn, (BYTE**)&framesbuffer);
   
   // Clear the to-be played buffer.
   for (int i = 0; i < writeframesn*2; i++) {
-    switch (bytespersample) {
-      // case 4:
-      // int* iframesbuffer;
-      // iframesbuffer[i] = 0;
-      // break;
-
-      case 2:
-      short* sframesbuffer = (short*)framesbuffer;
-      sframesbuffer[i] = 0;
-      break;
-
-      case 1:
-      char* cframesbuffer = (char*)framesbuffer;
-      sframesbuffer[i] = 0;
-      break;
-    }
+    framesbuffer[i] = 0;
   }
 }
 
@@ -159,26 +138,10 @@ void WAVE_end() {
   if (WAVE_usedears)
     volume = WAVE_usedears->volume;
   else
-    volume = 1.0f;
+    volume = 0.5f;
 
-  for (int i =0; i < writeframesn *2; i++) {
-    switch (bytespersample) {
-      // case 4:
-      // int* iframesbuffer;
-      // iframesbuffer[i] *= volume;
-      // break;
-
-      case 2:
-      short* sframesbuffer = (short*)framesbuffer;
-      sframesbuffer[i] *= volume;
-      break;
-
-      case 1:
-      char* cframesbuffer = (char*)framesbuffer;
-      sframesbuffer[i] *= volume;
-      break;
-    }
-  }
+  for (int i =0; i < writeframesn *2; i++)
+    framesbuffer[i] *= volume;
 
   pRenderClient->lpVtbl->ReleaseBuffer(pRenderClient, writeframesn, 0);
 }
@@ -199,6 +162,12 @@ static void safeadd(short* a, short b) {
   *a = f;
 }
 
+static short sample8to16(char sample8) {
+  short sample16 = sample8;
+  sample16 *= 256;
+  return sample16;
+}
+
 void WAVE_playmusic(WAVE_SOURCE source) {
   if (!source->audio)
     return;
@@ -214,27 +183,33 @@ void WAVE_playmusic(WAVE_SOURCE source) {
       }
     }
 
-    switch (bytespersample) {
-      case 2:
-      short* sframesbuffer = (short*)framesbuffer;
-      
+    switch (source->audio->bytespersample) {
+      case 2:{
       short* audiosampleptr = source->audio->samples;
       // += it as a short* now, not as void*
       audiosampleptr += source->si * source->audio->channelsn;
       
       int index = 0;
       
-      safeadd(sframesbuffer+si+0, audiosampleptr[index] * source->volume);
+      safeadd(framesbuffer+si+0, audiosampleptr[index] * source->volume);
       
       if (source->audio->channelsn==2) index++;
       
-      safeadd(sframesbuffer+si+1, audiosampleptr[index] * source->volume);
+      safeadd(framesbuffer+si+1, audiosampleptr[index] * source->volume);
       
-      break;
+      }break;
 
-      case 1:
-      return; // TODO: 8 bits per sample case when playing.
-      break;
+      case 1: {
+      char* audiosampleptr = source->audio->samples;
+      audiosampleptr += source->si * source->audio->channelsn;
+      
+      int index = 0;
+      safeadd(framesbuffer+si+0, sample8to16(audiosampleptr[index] * source->volume));
+      
+      if (source->audio->channelsn==2) index++;
+      
+      safeadd(framesbuffer+si+1, sample8to16(audiosampleptr[index] * source->volume));
+      }break;
     }
   }
 }
@@ -254,7 +229,11 @@ void WAVE_free() {
 
 WAVE_AUDIO WAVE_loadaudio(const char* fp) {
   FILE* f = fopen(fp, "rb");
-  
+  if (!f) {
+		printf("WAVE: Could not load audio '%s'.\n", fp);
+    return 0;
+  }
+
   // Test the RIFF
   char riff[4];
   fread(riff, 4, 1, f);
@@ -285,6 +264,14 @@ WAVE_AUDIO WAVE_loadaudio(const char* fp) {
 	UINT samplerate;
 	fread(&samplerate, 4, 1, f);
 	UTL_ILilE32(&samplerate);
+  if (usedsamplerate != samplerate) {
+		printf(
+      "WAVE: Sample rate(%d) of the audio file '%s' does not match with the used rate(%d).\n", 
+      samplerate, fp, usedsamplerate
+    );
+    fclose(f);
+    return 0;
+  }
 
 	// Skipping: byte rate + block alignment
 	fseek(f, 4+2, SEEK_CUR);
@@ -292,11 +279,6 @@ WAVE_AUDIO WAVE_loadaudio(const char* fp) {
 	USHORT loadedbps;
 	fread(&loadedbps, 2, 1, f);
 	UTL_ILilE16(&loadedbps);
-  if (loadedbps/8 != bytespersample) {
-		printf("WAVE: BPS of the audio file '%s' don't match with the bps we have.\n", fp);
-    fclose(f);
-		return 0;
-  }
 
 	// Skipping: Data marker or List chunk if present
   fread(riff, 4, 1, f);
@@ -346,7 +328,7 @@ void WAVE_setsource(WAVE_SOURCE source, WAVE_AUDIO audio) {
 int main() {
   // QM_init(256);
   UTL_Init();
-  if (!WAVE_init(6, 0))
+  if (!WAVE_init(1, 0))
     return 1;
   
   WAVE_AUDIO musicaudio = WAVE_loadaudio("HIDE.wav");
@@ -358,7 +340,7 @@ int main() {
     WAVE_begin();
       WAVE_playmusic(musicsource);
     WAVE_end();
-    Sleep(16);
+    Sleep(20);
   }
   WAVE_free();
   return 0;

@@ -110,16 +110,20 @@ void main() {
       f_highlight += vec3(dot(in_n, L)) * lights[i].color / (len*len);
     }
 
+    vec3 new_sundir = normalize(sundir);
+    new_sundir = rotate(-body_angles, new_sundir);
     // Finally the sun calculation
-    f_highlight += (dot(in_n, normalize(sundir))) * suncolor;
+    f_highlight += (dot(in_n, normalize(new_sundir))) * suncolor;
   }
 
   // Shift the model by the camera's offset
   finale -= eye.offset;
 
   // Eye offset is now 0,0,0, since we moved the mf, so it's just -finale
+  // TODO: Apply camera rotation, since when the object rotates, nothing changes.
   vec3 dirtocam = normalize(-finale);
-  float edn = dot(dirtocam, in_n); // Eye Dot Normal, is used to avoid rendering useless faces.
+  // float edn = dot(dirtocam, in_n); // Eye Dot Normal, is used to avoid rendering useless faces.
+  float edn = 1;
 
   // Rotate the model around the camera
   finale = rotate(-eye.angles, finale);

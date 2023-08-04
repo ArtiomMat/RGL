@@ -36,15 +36,15 @@ int main() {
   UTL_Init();
   // UTL_MessageBox("Memento Mori question", "Hello", UTL_MBYesNoCancel);
   TM_init(30);
-  if (!RGL_init(0, 320, 200))
+  if (!RGL_init(0, 600, 500))
     return 1;
   RGL_settitle("Momento Mori");
 
   RGL_keycb = rglkeycb;
   RGL_movecb = rglmovecb;
   
-  RGL_SHADER vert = RGL_loadshader(UTL_RelPath("RGL/eye_v.glsl"), RGL_VERTEXSHADER);
-  RGL_SHADER frag = RGL_loadshader(UTL_RelPath("RGL/eye_f.glsl"), RGL_FRAGMENTSHADER);
+  RGL_SHADER vert = RGL_loadshader(UTL_RelPath("RGL/rgl_v.glsl"), RGL_VERTEXSHADER);
+  RGL_SHADER frag = RGL_loadshader(UTL_RelPath("RGL/rgl_f.glsl"), RGL_FRAGMENTSHADER);
 
   RGL_PROGRAM prog = RGL_initprogram(vert, frag);
   RGL_loadcolors(prog, UTL_RelPath("RGL/cranes.rgc"));
@@ -56,16 +56,16 @@ int main() {
 
   // RGL_MODEL model = RGL_initmodel(vertices, 5, indices, 3, texturedata, 4, 4);
   RGL_MODEL model = RGL_loadmodel(UTL_RelPath("RGL/untitled.rgm"),RGL_loadtexture(UTL_RelPath("RGL/mori.rgt"), 1));
-  RGL_MODEL model2 = RGL_loadmodel(UTL_RelPath("RGL/frank.rgm"), RGL_loadtexture(UTL_RelPath("RGL/frank.rgt"), 1));
+  RGL_MODEL model2 = RGL_loadmodel(UTL_RelPath("RGL/aristocrat.rgm"), RGL_loadtexture(UTL_RelPath("RGL/aristocrat.rgt"), 1));
 
   RGL_BODY bodies[] = {RGL_initbody(model2, 0), RGL_initbody(model, RGL_BODYFLUNLIT), RGL_initbody(model, 0)};
   bodies[0]->info.offset[2] += 5.5f;
-  bodies[0]->info.offset[1] -= 5.5f;
+  bodies[0]->info.offset[1] -= 3.0f;
   bodies[1]->info.offset[0] += 1.0f;
   bodies[1]->info.offset[2] += 2.0f;
   bodies[2]->info.offset[1] += 2.0f;
   bodies[2]->info.offset[2] += 2.0f;
-  // bodies[0]->angles[1] -= 3.141/2;
+  bodies[0]->info.angles[1] -= 3.141;
 
   eye->sun.sundir[1] = 0.5;
   eye->sun.sundir[0] = -0.5;

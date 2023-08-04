@@ -41,8 +41,7 @@ void UTL_Init() {
 	U.I = 1;
 
 	UTL_isBigEndian = (U.C[1] == 1);
-	printf("UTL: Utility initialized. System is %s endian.\n", UTL_isBigEndian?"big":"small");
-
+	printf("UTL: System Utility module initialized. CPU is %s endian.\n", UTL_isBigEndian?"big":"little");
 
 	// TODO: It searches the path(skipping the EXE's path, and checks if a DLL exists)
 	// Use this as a base to delete the DLLs if the user has them already.

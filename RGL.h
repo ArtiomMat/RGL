@@ -1,5 +1,7 @@
 #pragma once
 
+// Retro Graphics Library - Hardware accelerated graphics library that mimics old games.
+
 #ifdef RGL_SRC
   #define EXTERN 
 #else

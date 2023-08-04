@@ -14,9 +14,11 @@ layout(std140) uniform colorsinfo {
 
 // TODO: The problem, is that I think it's better to do it in post processing rather that with every object, perhaps it will even be faster?
 void main() {
+  color = vec4(1,1,1,1);
   color = vec4(max(vec3(0,0,0), f_highlight),1) ;
-  // Since RGM is just OBJ but without the unordered shit, I guess the reversing of the coordnates has something to do with the fact that in obj the y=0 is the opposite.
-  color *= vec4(f_highlight/2+0.5,1) * texture(RGL_texture, vec2(f_t.x, -f_t.y));
+  // color *=  vec4(f_highlight/2+0.5,1);
+  // Since RGM is just OBJ but without the unordered shit, I guess the reversing of the coordnates has something to do with the fact that in obj the y=0 is the opposite of what OpenGL wants.
+  color *= texture(RGL_texture, vec2(f_t.x, -f_t.y));
   
   float depth = clamp(f_depth, 0, 1);
   color *= vec4(vec3(1-depth),1);

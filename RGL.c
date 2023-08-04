@@ -716,7 +716,7 @@ int RGL_init(UCHAR vsync, int width, int height) {
   else
     puts("RGL: Could not load glSwapInterval, so can't VSync.");
 
-  printf("RGL: Retro Graphics Library initialized. Using OpenGL %s.\n", glGetString(GL_VERSION));
+  printf("RGL: Retro GL module initialized. Using OpenGL %s.\n", glGetString(GL_VERSION));
 
   // Some basic OpenGL setup.
   glEnable(GL_DEPTH_TEST);

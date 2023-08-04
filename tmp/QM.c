@@ -22,7 +22,7 @@ void QM_init(int _trigtablesize) {
     // printf("%f\n", trigtable[i]);
     f+=fjump;
   }
-  printf("QM: Quick Math library initialized. Table is from %1.3f to %1.3f.\n", sintable[0], sintable[sintablesize-1]);
+  printf("QM: Quick Math module initialized. Table is from %1.3f to %1.3f.\n", sintable[0], sintable[sintablesize-1]);
 }
 
 float QM_rsqrt(float x) {
